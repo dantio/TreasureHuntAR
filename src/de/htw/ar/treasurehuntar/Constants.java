@@ -1,0 +1,10 @@
+package de.htw.ar.treasurehuntar;
+
+public class Constants {
+
+    /**
+     * daniil.tomilow@gmail.com
+     */
+    public static final String WIKITUDE_SDK_KEY = "bLJGViNrV+las2GMHUzKNllYBvX9HmD2YR1O/wT7PfxTPDY9VWsysUD7jUJpQRbdd2+eULwvp+wXaiay7CHjylLEVwWqDpdCaufg+n2J5w99SJ32I22rWU/u7y/2MFn551GZ9s9x6qq26mV6KTCzazr/QD7bCCye5glWHwCgBa1TYWx0ZWRfX1BMNGRojDxMeWbq1nWFYTQCW1v6l3X9BSFz0UQnmpQJbcdLuX4/9SsdnyVEdXUQgryjZwOCy8TVbOnWKSwY30SQgphTmw3b9Go0syUCj1LYbLjaSKgWFraXV3wRP3l4JLA8cOl+XsJRYenJonN9wbOKHG2ySHMrmepGKSbpQeKg9ES0zlkOOA8i48ZjrwExgNDzh2ivtYbqvNRTrOwgUOVtGmXJIcMadz1y0+wD5ijKwf70xY5j09erGEz4jelox5mfD93l++tAFWjRIBcLmFOXUkJvzDwiKnGZoMpC4Zhd6tbmOUO0TzK6Ca4QjWipCn4FsLBeIs9sXKHdq0kCEcNIQ5C67QG+27zSmeQZqPYhcgHQ/ZGygw2mWvYWCdGC+5Ti4jm/UM6MzWbmZR8Zw1q8XRtmjtx1MwDyrAxlm4plMeuxr8uJWolnBKPaNn3ewI3KEdzQfGG+pV4a9sHLXL3Z0wAYpXvrJAq/kc5gQHgQzWWtbnFaDZo=";
+
+}
