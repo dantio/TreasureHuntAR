@@ -6,6 +6,9 @@ import android.widget.Toast;
 import com.wikitude.architect.ArchitectView.ArchitectUrlListener;
 import com.wikitude.architect.ArchitectView.SensorAccuracyChangeListener;
 
+/**
+ * Schätze verstecken
+ */
 public class CachingActivity extends AbstractArchitectActivity {
 
     /**

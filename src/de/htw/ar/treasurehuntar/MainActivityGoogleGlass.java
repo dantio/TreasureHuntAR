@@ -38,7 +38,7 @@ public class MainActivityGoogleGlass extends Activity {
         // 1. discover with DiscoverActivity
         // 2. caching with CachingActivity and
         List<CardMeta> cards = new ArrayList<>();
-        cards.add(new CardMeta(this, "Discover", DiscoverActivity.class));
+        cards.add(new CardMeta(this, "Discover", HuntingActivity.class));
         cards.add(new CardMeta(this, "Caching", CachingActivity.class));
 
         // Scroll adapter with the two cards

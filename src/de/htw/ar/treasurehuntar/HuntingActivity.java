@@ -12,9 +12,9 @@ import org.json.JSONObject;
 import java.util.HashMap;
 
 /**
- * Find treasures
+ * Schätze finden
  */
-public class DiscoverActivity extends AbstractArchitectActivity {
+public class HuntingActivity extends AbstractArchitectActivity {
 
     protected JSONArray poiData;
     protected boolean isLoading = false;
@@ -56,14 +56,14 @@ public class DiscoverActivity extends AbstractArchitectActivity {
             public void onCompassAccuracyChanged(int accuracy) {
                 /* UNRELIABLE = 0, LOW = 1, MEDIUM = 2, HIGH = 3 */
                 if (accuracy < SensorManager.SENSOR_STATUS_ACCURACY_MEDIUM
-                    && DiscoverActivity.this != null && !DiscoverActivity.this
+                    && HuntingActivity.this != null && !HuntingActivity.this
                     .isFinishing() && System.currentTimeMillis()
-                    - DiscoverActivity.this.lastCalibrationToastShownTimeMillis
+                    - HuntingActivity.this.lastCalibrationToastShownTimeMillis
                     > 5 * 1000) {
-                    Toast.makeText(DiscoverActivity.this,
+                    Toast.makeText(HuntingActivity.this,
                         R.string.compass_accuracy_low, Toast.LENGTH_LONG)
                         .show();
-                    DiscoverActivity.this.lastCalibrationToastShownTimeMillis = System
+                    HuntingActivity.this.lastCalibrationToastShownTimeMillis = System
                         .currentTimeMillis();
                 }
             }
@@ -99,21 +99,21 @@ public class DiscoverActivity extends AbstractArchitectActivity {
         @Override
         public void run() {
 
-            DiscoverActivity.this.isLoading = true;
+            HuntingActivity.this.isLoading = true;
 
             final int WAIT_FOR_LOCATION_STEP_MS = 2000;
 
             while (
-                DiscoverActivity.this.lastKnownLocation == null
-                    && !DiscoverActivity.this.isFinishing()) {
+                HuntingActivity.this.lastKnownLocation == null
+                    && !HuntingActivity.this.isFinishing()) {
 
-                DiscoverActivity.this
+                HuntingActivity.this
                     .runOnUiThread(new Runnable() {
 
                         @Override
                         public void run() {
                             Toast.makeText(
-                                DiscoverActivity.this,
+                                HuntingActivity.this,
                                 R.string.location_fetching, Toast.LENGTH_SHORT)
                                 .show();
                         }
@@ -126,20 +126,20 @@ public class DiscoverActivity extends AbstractArchitectActivity {
                 }
             }
 
-            if (DiscoverActivity.this.lastKnownLocation != null
-                && !DiscoverActivity.this.isFinishing()) {
+            if (HuntingActivity.this.lastKnownLocation != null
+                && !HuntingActivity.this.isFinishing()) {
                 // TODO: you may replace this dummy implementation and instead load POI information e.g. from your database
-                DiscoverActivity.this.poiData = DiscoverActivity
+                HuntingActivity.this.poiData = HuntingActivity
                     .getPoiInformation(
-                        DiscoverActivity.this.lastKnownLocation,
+                        HuntingActivity.this.lastKnownLocation,
                         20);
-                DiscoverActivity.this
+                HuntingActivity.this
                     .callJavaScript("World.loadPoisFromJsonData", new String[] {
-                        DiscoverActivity.this.poiData
+                        HuntingActivity.this.poiData
                             .toString() });
             }
 
-            DiscoverActivity.this.isLoading = false;
+            HuntingActivity.this.isLoading = false;
         }
     };
 
