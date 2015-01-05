@@ -27,9 +27,19 @@ import java.io.IOException;
 public abstract class AbstractArchitectActivity extends Activity {
 
     /**
-     * 50km = architectView's default cullingDistance, return this value in "getInitialCullingDistanceMeters()" to not change cullingDistance.
+     * extras key for architect-url to load, usually already known upfront, can be relative folder to assets (myWorld.html --> assets/myWorld.html is loaded) or web-url ("http://myserver.com/myWorld.html"). Note that argument passing is only possible via web-url
      */
-    public static final int CULLING_DISTANCE_DEFAULT_METERS = 50 * 1000;
+    protected static final String EXTRAS_KEY_ACTIVITY_ARCHITECT_WORLD_URL = "activityArchitectWorldUrl";
+
+    /**
+     * extras key for activity title, usually static and set in Manifest.xml
+     */
+    protected static final String EXTRAS_KEY_ACTIVITY_TITLE_STRING = "activityTitle";
+
+    /**
+     * 1km = architectView's default cullingDistance, return this value in "getInitialCullingDistanceMeters()" to not change cullingDistance.
+     */
+    public static final int CULLING_DISTANCE_DEFAULT_METERS = 1 * 1000;
 
     /**
      * holds the Wikitude SDK AR-View, this is where camera, markers, compass, 3D models etc. are rendered
@@ -150,9 +160,9 @@ public abstract class AbstractArchitectActivity extends Activity {
 
             @Override
             public void onLocationChanged(final Location location) {
-                Log.i("location", "changed");
                 // forward location updates fired by LocationProvider to architectView, you can set lat/lon from any location-strategy
                 if (location != null) {
+                    Log.i("location", location.toString());
                     // sore last location as member, in case it is needed somewhere (in e.g. your adjusted project)
                     AbstractArchitectActivity.this.lastKnownLocation = location;
                     if (AbstractArchitectActivity.this.architectView
@@ -180,7 +190,6 @@ public abstract class AbstractArchitectActivity extends Activity {
 
         // locationProvider used to fetch user position
         this.locationProvider = getLocationProvider(this.locationListener);
-
     }
 
     @Override
@@ -279,14 +288,22 @@ public abstract class AbstractArchitectActivity extends Activity {
      *
      * @return
      */
-    public abstract String getActivityTitle();
+    public String getActivityTitle() {
+        return (getIntent().getExtras() != null && getIntent().getExtras().get(
+            EXTRAS_KEY_ACTIVITY_TITLE_STRING) != null) ? getIntent()
+            .getExtras().getString(EXTRAS_KEY_ACTIVITY_TITLE_STRING)
+            : "Test-World";
+    }
 
     /**
      * path to the architect-file (AR-Experience HTML) to launch
      *
      * @return
      */
-    public abstract String getARchitectWorldPath();
+    public String getARchitectWorldPath() {
+        return getIntent().getExtras().getString(
+            EXTRAS_KEY_ACTIVITY_ARCHITECT_WORLD_URL);
+    }
 
     /**
      * url listener fired once e.g. 'document.location = "architectsdk://foo?bar=123"' is called in JS

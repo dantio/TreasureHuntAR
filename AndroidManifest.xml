@@ -75,9 +75,8 @@
         <activity android:name="de.htw.ar.treasurehuntar.CachingActivity"
                   android:configChanges="orientation|keyboardHidden|screenSize"/>
 
-        <activity android:name=".HuntingActivity"
+        <activity android:name="de.htw.ar.treasurehuntar.HuntingActivity"
                   android:configChanges="orientation|keyboardHidden|screenSize"/>
-
 
     </application>
 

@@ -3,6 +3,8 @@ package de.htw.ar.treasurehuntar;
 import android.hardware.SensorManager;
 import android.location.Location;
 import android.location.LocationListener;
+import android.os.Bundle;
+import android.util.Log;
 import android.widget.Toast;
 import com.wikitude.architect.ArchitectView.ArchitectUrlListener;
 import com.wikitude.architect.ArchitectView.SensorAccuracyChangeListener;
@@ -10,6 +12,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.HashMap;
+import java.util.Random;
 
 /**
  * Schätze finden
@@ -20,34 +23,20 @@ public class HuntingActivity extends AbstractArchitectActivity {
     protected boolean isLoading = false;
 
     /**
-     * extras key for activity title, usually static and set in Manifest.xml
+     * 1km radius
      */
-    protected static final String EXTRAS_KEY_ACTIVITY_TITLE_STRING = "activityTitle";
+    public static final int DISTANCE_DEFAULT_METERS = 1 * 1000;
 
     /**
-     * extras key for architect-url to load, usually already known upfront, can be relative folder to assets (myWorld.html --> assets/myWorld.html is loaded) or web-url ("http://myserver.com/myWorld.html"). Note that argument passing is only possible via web-url
+     * max tresures
      */
-    protected static final String EXTRAS_KEY_ACTIVITY_ARCHITECT_WORLD_URL = "activityArchitectWorldUrl";
+    public static final int MAX_TRESURES = 20;
 
     /**
      * last time the calibration toast was shown, this avoids too many toast shown when compass needs calibration
      */
     private long lastCalibrationToastShownTimeMillis = System
         .currentTimeMillis();
-
-    @Override
-    public String getARchitectWorldPath() {
-        return getIntent().getExtras().getString(
-            EXTRAS_KEY_ACTIVITY_ARCHITECT_WORLD_URL);
-    }
-
-    @Override
-    public String getActivityTitle() {
-        return (getIntent().getExtras() != null && getIntent().getExtras().get(
-            EXTRAS_KEY_ACTIVITY_TITLE_STRING) != null) ? getIntent()
-            .getExtras().getString(EXTRAS_KEY_ACTIVITY_TITLE_STRING)
-            : "Test-World";
-    }
 
     @Override
     public SensorAccuracyChangeListener getSensorAccuracyListener() {
@@ -90,8 +79,7 @@ public class HuntingActivity extends AbstractArchitectActivity {
 
     @Override
     public float getInitialCullingDistanceMeters() {
-        // you need to adjust this in case your POIs are more than 50km away from user here while loading or in JS code (compare 'AR.context.scene.cullingDistance')
-        return CULLING_DISTANCE_DEFAULT_METERS;
+        return DISTANCE_DEFAULT_METERS;
     }
 
     final Runnable loadData = new Runnable() {
@@ -101,7 +89,7 @@ public class HuntingActivity extends AbstractArchitectActivity {
 
             HuntingActivity.this.isLoading = true;
 
-            final int WAIT_FOR_LOCATION_STEP_MS = 2000;
+            final int WAIT_FOR_LOCATION_STEP_MS = 5000;
 
             while (
                 HuntingActivity.this.lastKnownLocation == null
@@ -132,9 +120,10 @@ public class HuntingActivity extends AbstractArchitectActivity {
                 HuntingActivity.this.poiData = HuntingActivity
                     .getPoiInformation(
                         HuntingActivity.this.lastKnownLocation,
-                        20);
+                        MAX_TRESURES);
+
                 HuntingActivity.this
-                    .callJavaScript("World.loadPoisFromJsonData", new String[] {
+                    .callJavaScript("TreasureHuntAR.hunting", new String[] {
                         HuntingActivity.this.poiData
                             .toString() });
             }
@@ -142,6 +131,12 @@ public class HuntingActivity extends AbstractArchitectActivity {
             HuntingActivity.this.isLoading = false;
         }
     };
+
+    @Override
+    protected void onPostCreate(final Bundle savedInstanceState) {
+        super.onPostCreate(savedInstanceState);
+        loadData();
+    }
 
     protected void loadData() {
         if (!isLoading) {
@@ -169,23 +164,33 @@ public class HuntingActivity extends AbstractArchitectActivity {
         // ensure these attributes are also used in JavaScript when extracting POI data
         final String ATTR_ID = "id";
         final String ATTR_NAME = "name";
+        final String ATTR_RESOURCE = "res";
         final String ATTR_DESCRIPTION = "description";
         final String ATTR_LATITUDE = "latitude";
         final String ATTR_LONGITUDE = "longitude";
         final String ATTR_ALTITUDE = "altitude";
 
-        for (int i = 1; i <= numberOfPlaces; i++) {
-            final HashMap<String, String> poiInformation = new HashMap<String, String>();
+        for (int i = 0; i < numberOfPlaces; i++) {
+            final HashMap<String, String> poiInformation = new HashMap<>();
+            // Id
             poiInformation.put(ATTR_ID, String.valueOf(i));
+            // Name
             poiInformation.put(ATTR_NAME, "POI#" + i);
+            // Image e. g. (treasure, hint)
+            poiInformation.put(ATTR_RESOURCE, "img/treasure.png");
+            // Description
             poiInformation
                 .put(ATTR_DESCRIPTION, "This is the description of POI#" + i);
+
             double[] poiLocationLatLon = getRandomLatLonNearby(
-                userLocation.getLatitude(), userLocation.getLongitude());
+                userLocation.getLatitude(), userLocation.getLongitude(), 50);
+
             poiInformation
                 .put(ATTR_LATITUDE, String.valueOf(poiLocationLatLon[0]));
             poiInformation
                 .put(ATTR_LONGITUDE, String.valueOf(poiLocationLatLon[1]));
+
+
             final float UNKNOWN_ALTITUDE = -32768f;  // equals "AR.CONST.UNKNOWN_ALTITUDE" in JavaScript (compare AR.GeoLocation specification)
             // Use "AR.CONST.UNKNOWN_ALTITUDE" to tell ARchitect that altitude of places should be on user level. Be aware to handle altitude properly in locationManager in case you use valid POI altitude value (e.g. pass altitude only if GPS accuracy is <7m).
             poiInformation.put(ATTR_ALTITUDE, String.valueOf(UNKNOWN_ALTITUDE));
@@ -206,6 +211,29 @@ public class HuntingActivity extends AbstractArchitectActivity {
         final double lon) {
         return new double[] { lat + Math.random() / 5 - 0.1,
             lon + Math.random() / 5 - 0.1 };
+    }
+
+    private static double[] getRandomLatLonNearby(double lat, double lon,
+        int radius) {
+        Random random = new Random();
+
+        // Convert radius from meters to degrees
+        double radiusInDegrees = radius / 111000f;
+
+        double u = random.nextDouble();
+        double v = random.nextDouble();
+        double w = radiusInDegrees * Math.sqrt(u);
+        double t = 2 * Math.PI * v;
+        double x = w * Math.cos(t);
+        double y = w * Math.sin(t);
+
+        // Adjust the x-coordinate for the shrinking of the east-west distances
+        double new_x = x / Math.cos(lon);
+
+        double foundLongitude = new_x + lon;
+        double foundLatitude = y + lat;
+
+        return new double[] { foundLatitude, foundLongitude };
     }
 
 }

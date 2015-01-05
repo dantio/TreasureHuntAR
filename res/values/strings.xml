@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">TreasureHuntAR</string>
-    <string name="app_voice_command">Tresure Hunt</string>
+    <string name="app_voice_command">Tresure HuntAR</string>
 
     <string name="caching_title">Schätze verstecken</string>
-    <string name="discover_title">Schätze suchen</string>
+    <string name="hunting_title">Schätze suchen</string>
 
     <string name="main_title_urlLauncher">Launch World via url</string>
     <string name="compass_accuracy_low">Please re-calibrate compass by waving your device in a figure 8 motion.</string>
