@@ -37,11 +37,6 @@ public abstract class AbstractArchitectActivity extends Activity {
     protected static final String EXTRAS_KEY_ACTIVITY_TITLE_STRING = "activityTitle";
 
     /**
-     * 1km = architectView's default cullingDistance, return this value in "getInitialCullingDistanceMeters()" to not change cullingDistance.
-     */
-    public static final int CULLING_DISTANCE_DEFAULT_METERS = 1 * 1000;
-
-    /**
      * holds the Wikitude SDK AR-View, this is where camera, markers, compass, 3D models etc. are rendered
      */
     protected ArchitectView architectView;
@@ -205,12 +200,9 @@ public abstract class AbstractArchitectActivity extends Activity {
                 // load content via url in architectView, ensure '<script src="architect://architect.js"></script>' is part of this HTML file, have a look at wikitude.com's developer section for API references
                 this.architectView.load(this.getARchitectWorldPath());
 
-                if (this.getInitialCullingDistanceMeters()
-                    != CULLING_DISTANCE_DEFAULT_METERS) {
-                    // set the culling distance - meaning: the maximum distance to render geo-content
-                    this.architectView.setCullingDistance(
-                        this.getInitialCullingDistanceMeters());
-                }
+                // set the culling distance - meaning: the maximum distance to render geo-content
+                this.architectView.setCullingDistance(
+                    this.getInitialCullingDistanceMeters());
 
             } catch (IOException e1) {
                 e1.printStackTrace();
@@ -345,19 +337,7 @@ public abstract class AbstractArchitectActivity extends Activity {
     public abstract ArchitectView.SensorAccuracyChangeListener getSensorAccuracyListener();
 
     /**
-     * helper to check if video-drawables are supported by this device. recommended to check before launching ARchitect Worlds with videodrawables
-     *
-     * @return true if AR.VideoDrawables are supported, false if fallback rendering would apply (= show video fullscreen)
-     */
-    public static final boolean isVideoDrawablesSupported() {
-        String extensions = GLES20.glGetString(GLES20.GL_EXTENSIONS);
-        return extensions != null && extensions
-            .contains("GL_OES_EGL_image_external")
-            && android.os.Build.VERSION.SDK_INT >= 14;
-    }
-
-    /**
-     * call JacaScript in architectView
+     * call JavaScript in architectView
      *
      * @param methodName
      * @param arguments

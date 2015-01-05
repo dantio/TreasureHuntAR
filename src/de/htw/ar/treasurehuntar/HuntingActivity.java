@@ -4,7 +4,6 @@ import android.hardware.SensorManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.os.Bundle;
-import android.util.Log;
 import android.widget.Toast;
 import com.wikitude.architect.ArchitectView.ArchitectUrlListener;
 import com.wikitude.architect.ArchitectView.SensorAccuracyChangeListener;
@@ -23,14 +22,14 @@ public class HuntingActivity extends AbstractArchitectActivity {
     protected boolean isLoading = false;
 
     /**
-     * 1km radius
+     * radius in m
      */
-    public static final int DISTANCE_DEFAULT_METERS = 1 * 1000;
+    public static final int MAX_RADIUS = 1000;
 
     /**
      * max tresures
      */
-    public static final int MAX_TRESURES = 20;
+    public static final int MAX_TRESURES = 30;
 
     /**
      * last time the calibration toast was shown, this avoids too many toast shown when compass needs calibration
@@ -79,7 +78,7 @@ public class HuntingActivity extends AbstractArchitectActivity {
 
     @Override
     public float getInitialCullingDistanceMeters() {
-        return DISTANCE_DEFAULT_METERS;
+        return MAX_RADIUS;
     }
 
     final Runnable loadData = new Runnable() {
@@ -177,19 +176,19 @@ public class HuntingActivity extends AbstractArchitectActivity {
             // Name
             poiInformation.put(ATTR_NAME, "POI#" + i);
             // Image e. g. (treasure, hint)
-            poiInformation.put(ATTR_RESOURCE, "img/treasure.png");
+            poiInformation.put(ATTR_RESOURCE, "img/magnifier.png");
             // Description
             poiInformation
                 .put(ATTR_DESCRIPTION, "This is the description of POI#" + i);
 
             double[] poiLocationLatLon = getRandomLatLonNearby(
-                userLocation.getLatitude(), userLocation.getLongitude(), 50);
+                userLocation.getLatitude(), userLocation.getLongitude(),
+                MAX_RADIUS);
 
             poiInformation
                 .put(ATTR_LATITUDE, String.valueOf(poiLocationLatLon[0]));
             poiInformation
                 .put(ATTR_LONGITUDE, String.valueOf(poiLocationLatLon[1]));
-
 
             final float UNKNOWN_ALTITUDE = -32768f;  // equals "AR.CONST.UNKNOWN_ALTITUDE" in JavaScript (compare AR.GeoLocation specification)
             // Use "AR.CONST.UNKNOWN_ALTITUDE" to tell ARchitect that altitude of places should be on user level. Be aware to handle altitude properly in locationManager in case you use valid POI altitude value (e.g. pass altitude only if GPS accuracy is <7m).
