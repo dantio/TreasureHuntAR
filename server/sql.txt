@@ -1,0 +1,9 @@
+CREATE TABLE cache (
+    id bigint NOT NULL,
+    description text NOT NULL,
+    picture character varying(512) NOT NULL,
+    latitude double precision NOT NULL,
+    longitude double precision NOT NULL,
+    altitude double precision NOT NULL,
+    target text NOT NULL,
+);
