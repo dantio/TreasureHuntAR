@@ -93,7 +93,7 @@ public class CachingActivity extends AbstractArchitectActivity {
     @Override
     public float getInitialCullingDistanceMeters() {
         // you need to adjust this in case your POIs are more than 50km away from user here while loading or in JS code (compare 'AR.context.scene.cullingDistance')
-        return AbstractArchitectActivity.CULLING_DISTANCE_DEFAULT_METERS;
+        return 50;
     }
 
 }
