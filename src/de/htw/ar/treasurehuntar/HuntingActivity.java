@@ -24,12 +24,12 @@ public class HuntingActivity extends AbstractArchitectActivity {
     /**
      * radius in m
      */
-    public static final int MAX_RADIUS = 1000;
+    public static final int MAX_RADIUS = 20000;
 
     /**
      * max tresures
      */
-    public static final int MAX_TRESURES = 30;
+    public static final int MAX_TRESURES = 50;
 
     /**
      * last time the calibration toast was shown, this avoids too many toast shown when compass needs calibration

@@ -1,0 +1,37 @@
+{
+  "name": "TreasureHuntAR-Server",
+  "version": "0.1.0",
+  "description": "Server for TreasureHuntAR",
+  "author": "Daniil Tomilow <daniil.tomilow@gmail.com>",
+  "contributors": [
+    {
+      "name": "Eric Wündisch",
+      "email": "Eric Haller"
+    }
+  ],
+  "main": "server.js",
+  "dependencies": {
+    "async": "*",
+    "body-parser": "*",
+    "express": "^5.0.0-alpha.1",
+    "multer": "*",
+    "sqlite3": "*"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DaniilTomilow/TreasureHuntAR"
+  },
+  "bugs": {
+    "url": "https://github.com/DaniilTomilow/TreasureHuntAR/issues"
+  },
+  "keywords": [
+    "nodejitsu",
+    "example",
+    "browsenpm"
+  ],
+  "preferGlobal": true,
+  "private": true,
+  "subdomain": "foobar",
+  "analyze": true,
+  "license": "MIT"
+}

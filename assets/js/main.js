@@ -14,15 +14,22 @@ var TreasureHuntAR = {
         // every object in space has a name, location and a circle (drawable)
         var indicatorImg = new AR.ImageResource("img/indi.png");
 
+
         // create geo objects
         for (var i = 0; i < poiData.length; i++) {
             var location = new AR.GeoLocation(
                 parseFloat(poiData[i].latitude),
                 parseFloat(poiData[i].longitude),
-                parseFloat(poiData[i].altitude) );
+                parseFloat(poiData[i].altitude));
+
+            //var actionRange2 = new AR.ActionRange(location1, 500, {
+            //    onEnter : function() {
+            //        actionRange2.enabled = false; //an ActionArea which can only be entered once
+            //    }
+            //});
 
             // show name of object below
-            var label = new AR.Label(poiData[i].name, 1, {
+            var label = new AR.Label(location.distanceToUser(), 1, {
                 offsetY: -magnifierSize / 2,
                 verticalAnchor: AR.CONST.VERTICAL_ANCHOR.TOP,
                 opacity: 0.9,
@@ -42,7 +49,7 @@ var TreasureHuntAR = {
                         cam: [image, label]
                     },
 
-                    onClick: this.magnifierClicked(poiData[i])
+                    onClick: TreasureHuntAR.magnifierClicked(poiData[i])
                 });
         }
 
@@ -52,12 +59,12 @@ var TreasureHuntAR = {
         });
 
         this.magnifiersGeoObjects[0].drawables.addIndicatorDrawable(imageDrawable);
-        //AR.radar.container = document.getElementById("radarContainer");
+        AR.radar.container = document.getElementById("radarContainer");
+        AR.radar.enabled = true;
     },
 
     magnifierClicked: function (magnifier) {
         return function () {
-            document.getElementById("info").setAttribute("class", "info");
             document.getElementById("name").innerHTML = magnifier.name;
             document.getElementById("info").setAttribute("class", "infoVisible");
         };

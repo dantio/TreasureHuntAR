@@ -85,6 +85,7 @@ public abstract class AbstractArchitectActivity extends Activity {
         // pressing volume up/down should cause music volume changes
         this.setVolumeControlStream(AudioManager.STREAM_MUSIC);
 
+
         // set samples content view
         this.setContentView(this.getContentViewId());
 

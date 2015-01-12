@@ -13,9 +13,9 @@ var API_HOST = "api.wikitude.com";
 // the API path
 var API_PATH = "/targets/wtc-url";
 // Your API key
-var apiToken = null;
+var apiToken = "8baa3a2cac6df74b3a0154a062b8b1e5";
 // The version of the API we will use
-var apiVersion = null;
+var apiVersion = 2;
 
 /**
  * Takes an Array of Image URLs and converts them into the JSON object the Wikitude Cloud Targets API requires when
