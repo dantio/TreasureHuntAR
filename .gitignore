@@ -1,4 +1,9 @@
 .idea/workspace.xml
+.idea/misc.xml
 .idea/tasks.xml
+target
+server/node_modules
+server/npm_debug.log
+server/treasureHuntAR.db
 /gen
 /bin
