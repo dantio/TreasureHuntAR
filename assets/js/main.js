@@ -1,5 +1,6 @@
 var TreasureHuntAR = {
-    magnifiersGeoObjects: [],
+    magnifiersGeoObjects: {},
+    magnifierInVision: null,
 
     /**
      * Called in HuntingActivity
@@ -28,45 +29,64 @@ var TreasureHuntAR = {
             //    }
             //});
 
-            // show name of object below
-            var label = new AR.Label(location.distanceToUser(), 1, {
-                offsetY: -magnifierSize / 2,
-                verticalAnchor: AR.CONST.VERTICAL_ANCHOR.TOP,
-                opacity: 0.9,
-                zOrder: 1,
-                style: {
-                    textColor: '#FFFFFF',
-                    backgroundColor: '#00000005'
-                }
-            });
-
             var image = new AR.ImageDrawable(new AR.ImageResource(poiData[i].res), magnifierSize);
 
-            // Create objects in AR
-            this.magnifiersGeoObjects[i] = new AR.GeoObject(
+            var poi = this.magnifiersGeoObjects[poiData[i].id] = {};
+            poi.poiData = poiData[i];
+            poi.geoObject = new AR.GeoObject(
                 location, {
                     drawables: {
-                        cam: [image, label]
+                        cam: [image]
                     },
-
-                    onClick: TreasureHuntAR.magnifierClicked(poiData[i])
+                    onEnterFieldOfVision: TreasureHuntAR.inVision(poi),
+                    onExitFieldOfVision: TreasureHuntAR.exitVision(poi)
                 });
         }
-
         // Add indicator to first Magnifier
-        var imageDrawable = new AR.ImageDrawable(indicatorImg, 0.1, {
-            verticalAnchor: AR.CONST.VERTICAL_ANCHOR.TOP
-        });
+        //var imageDrawable = new AR.ImageDrawable(indicatorImg, 0.1, {
+        //    verticalAnchor: AR.CONST.VERTICAL_ANCHOR.TOP
+        //});
 
-        this.magnifiersGeoObjects[0].drawables.addIndicatorDrawable(imageDrawable);
-        AR.radar.container = document.getElementById("radarContainer");
-        AR.radar.enabled = true;
+        //this.magnifiersGeoObjects[0].drawables.addIndicatorDrawable(imageDrawable);
+        //AR.radar.container = document.getElementById("radarContainer");
+        //AR.radar.enabled = true;
     },
 
-    magnifierClicked: function (magnifier) {
+    inVision: function (poi) {
         return function () {
-            document.getElementById("name").innerHTML = magnifier.name;
-            document.getElementById("info").setAttribute("class", "infoVisible");
+            if (TreasureHuntAR.magnifierInVision != null) {
+                var userDistance1 = TreasureHuntAR.magnifierInVision.locations[0].distanceToUser();
+                var userDistance2 = poi.geoObject.locations[0].distanceToUser();
+                if (userDistance2 < userDistance1) {
+                    TreasureHuntAR.showDetails(poi);
+                    TreasureHuntAR.magnifierInVision = poi;
+                }
+            } else {
+                TreasureHuntAR.showDetails(poi);
+                TreasureHuntAR.magnifierInVision = poi;
+            }
         };
+    }
+    ,
+
+    exitVision: function (poi) {
+        return function () {
+            if (TreasureHuntAR.magnifierInVision != null && TreasureHuntAR.magnifierInVision == poi) {
+                TreasureHuntAR.magnifierInVision = null;
+                TreasureHuntAR.hideDetails();
+            }
+        };
+    }
+    ,
+
+    showDetails: function (poi) {
+        document.getElementById("name").innerHTML = poi.poiData.name;
+        document.getElementById("info").setAttribute("class", "infoVisible");
+        document.getElementById("distance").innerHTML = poi.geoObject.locations[0].distanceToUser();
+    }
+    ,
+
+    hideDetails: function () {
+        document.getElementById("info").setAttribute("class", "info");
     }
 };

@@ -4,6 +4,8 @@ import android.hardware.SensorManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.os.Bundle;
+import android.util.Log;
+import android.view.KeyEvent;
 import android.widget.Toast;
 import com.wikitude.architect.ArchitectView.ArchitectUrlListener;
 import com.wikitude.architect.ArchitectView.SensorAccuracyChangeListener;
@@ -24,18 +26,29 @@ public class HuntingActivity extends AbstractArchitectActivity {
     /**
      * radius in m
      */
-    public static final int MAX_RADIUS = 20000;
+    public static final int MAX_RADIUS = 2000;
 
     /**
      * max tresures
      */
-    public static final int MAX_TRESURES = 50;
+    public static final int MAX_TRESURES = 2;
 
     /**
      * last time the calibration toast was shown, this avoids too many toast shown when compass needs calibration
      */
     private long lastCalibrationToastShownTimeMillis = System
         .currentTimeMillis();
+
+    @Override
+    public boolean onKeyDown(int keycode, KeyEvent event) {
+        if (keycode == KeyEvent.KEYCODE_DPAD_CENTER) {
+            // user tapped touchpad, do something
+            Log.i("touch", "touched");
+            return true;
+        }
+
+        return super.onKeyDown(keycode, event);
+    }
 
     @Override
     public SensorAccuracyChangeListener getSensorAccuracyListener() {
