@@ -4,9 +4,10 @@ import android.hardware.SensorManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.KeyEvent;
 import android.widget.Toast;
+import com.google.android.glass.touchpad.Gesture;
+import com.google.android.glass.touchpad.GestureDetector;
 import com.wikitude.architect.ArchitectView.ArchitectUrlListener;
 import com.wikitude.architect.ArchitectView.SensorAccuracyChangeListener;
 import org.json.JSONArray;
@@ -39,15 +40,15 @@ public class HuntingActivity extends AbstractArchitectActivity {
     private long lastCalibrationToastShownTimeMillis = System
         .currentTimeMillis();
 
+
     @Override
-    public boolean onKeyDown(int keycode, KeyEvent event) {
-        if (keycode == KeyEvent.KEYCODE_DPAD_CENTER) {
-            // user tapped touchpad, do something
-            Log.i("touch", "touched");
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if(keyCode ==  KeyEvent.KEYCODE_DPAD_CENTER){
+            // The touchpad was tapped
             return true;
         }
 
-        return super.onKeyDown(keycode, event);
+        return false;
     }
 
     @Override
@@ -247,5 +248,4 @@ public class HuntingActivity extends AbstractArchitectActivity {
 
         return new double[] { foundLatitude, foundLongitude };
     }
-
 }

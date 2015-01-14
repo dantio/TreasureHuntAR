@@ -1,6 +1,8 @@
 var TreasureHuntAR = {
-    magnifiersGeoObjects: {},
+    magnifiers: {}, // { id, poiData, geoObject }
+    magnifiersGeoObjects: [], // array of geoObject
     magnifierInVision: null,
+    magnifierSize: 2,
 
     /**
      * Called in HuntingActivity
@@ -8,13 +10,6 @@ var TreasureHuntAR = {
      */
     hunting: function (poiDataServer) {
         var poiData = poiDataServer || [];
-
-        // sizes & distances are far away from real values! used these scalings to be able to show within user range
-        var magnifierSize = 2;
-
-        // every object in space has a name, location and a circle (drawable)
-        var indicatorImg = new AR.ImageResource("img/indi.png");
-
 
         // create geo objects
         for (var i = 0; i < poiData.length; i++) {
@@ -29,9 +24,9 @@ var TreasureHuntAR = {
             //    }
             //});
 
-            var image = new AR.ImageDrawable(new AR.ImageResource(poiData[i].res), magnifierSize);
+            var image = new AR.ImageDrawable(new AR.ImageResource(poiData[i].res), this.magnifierSize);
 
-            var poi = this.magnifiersGeoObjects[poiData[i].id] = {};
+            var poi = this.magnifiers[poiData[i].id] = {};
             poi.poiData = poiData[i];
             poi.geoObject = new AR.GeoObject(
                 location, {
@@ -41,15 +36,37 @@ var TreasureHuntAR = {
                     onEnterFieldOfVision: TreasureHuntAR.inVision(poi),
                     onExitFieldOfVision: TreasureHuntAR.exitVision(poi)
                 });
-        }
-        // Add indicator to first Magnifier
-        //var imageDrawable = new AR.ImageDrawable(indicatorImg, 0.1, {
-        //    verticalAnchor: AR.CONST.VERTICAL_ANCHOR.TOP
-        //});
 
-        //this.magnifiersGeoObjects[0].drawables.addIndicatorDrawable(imageDrawable);
+            this.magnifiersGeoObjects.push(poi.geoObject);
+        }
+
         //AR.radar.container = document.getElementById("radarContainer");
         //AR.radar.enabled = true;
+    },
+
+    // User tapped and want to hunt a treasure
+    startHunting: function () {
+        // no magnifier
+        if (this.magnifierInVision == null) {
+            return;
+        }
+
+        // disable all magnifier
+        for(var i = 0, l = this.magnifiersGeoObjects.length; i < l; i++) {
+            this.this.magnifiersGeoObjects[i].enabled = false;
+        }
+
+        // TODO change image?
+        // enable magnifier
+        this.magnifierInVision.geoObject.enabled = true;
+
+        // Add indicator to our magnifier
+        var indicatorImg = new AR.ImageResource("img/indi.png");
+        var imageDrawable = new AR.ImageDrawable(indicatorImg, 0.1, {
+            verticalAnchor: AR.CONST.VERTICAL_ANCHOR.TOP
+        });
+        this.magnifierInVision.geoObject.drawables.addIndicatorDrawable(imageDrawable);
+
     },
 
     inVision: function (poi) {
@@ -66,8 +83,7 @@ var TreasureHuntAR = {
                 TreasureHuntAR.magnifierInVision = poi;
             }
         };
-    }
-    ,
+    },
 
     exitVision: function (poi) {
         return function () {
@@ -76,15 +92,13 @@ var TreasureHuntAR = {
                 TreasureHuntAR.hideDetails();
             }
         };
-    }
-    ,
+    },
 
     showDetails: function (poi) {
         document.getElementById("name").innerHTML = poi.poiData.name;
         document.getElementById("info").setAttribute("class", "infoVisible");
         document.getElementById("distance").innerHTML = poi.geoObject.locations[0].distanceToUser();
-    }
-    ,
+    },
 
     hideDetails: function () {
         document.getElementById("info").setAttribute("class", "info");

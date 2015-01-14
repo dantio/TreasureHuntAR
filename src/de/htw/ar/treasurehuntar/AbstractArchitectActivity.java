@@ -85,10 +85,7 @@ public abstract class AbstractArchitectActivity extends Activity {
         // pressing volume up/down should cause music volume changes
         this.setVolumeControlStream(AudioManager.STREAM_MUSIC);
 
-
-        // set samples content view
         this.setContentView(this.getContentViewId());
-
         this.setTitle(this.getActivityTitle());
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -356,6 +353,17 @@ public abstract class AbstractArchitectActivity extends Activity {
         if (this.architectView != null) {
             final String js = (methodName + "( " + argumentsString.toString()
                 + " );");
+            this.architectView.callJavascript(js);
+        }
+    }
+    /**
+     * call JavaScript in architectView
+     *
+     * @param methodName
+     */
+    protected void callJavaScript(final String methodName) {
+        if (this.architectView != null) {
+            final String js = (methodName + "();");
             this.architectView.callJavascript(js);
         }
     }
