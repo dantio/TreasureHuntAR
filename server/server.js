@@ -1,19 +1,18 @@
 var express = require('express'), // REST-App
     app = express(),
     bodyParser = require('body-parser'),
-    multer = require('multer'),
-    async = require('async'),
+    multer = require('multer')
     fs = require('fs'),
     TargetsAPI = require("./TargetsAPI.js"),
     sqlite3 = require('sqlite3').verbose(),
-    db = new sqlite3.Database('treasureHuntAR.db');
+    db = new  sqlite3.Database('treasureHuntAR.db');
 
 var STATUS = {status: false},
     API_TOKEN = "XXX",
     API_VERSION = 2;
 
 var API = new TargetsAPI(API_TOKEN, API_VERSION);
-var IMAGE_URL = 'http://ericwuendisch.de/restnode/uploads/'; //remember the last /
+var IMAGE_URL = 'http://ericwuendisch.de/restnode/server/uploads/'; //remember the last /
 
 db.serialize(function () {
     db.run("CREATE TABLE cache ("
@@ -23,7 +22,7 @@ db.serialize(function () {
     + "latitude double precision NOT NULL,"
     + "longitude double precision NOT NULL,"
     + "altitude double precision NOT NULL,"
-    + "target text NOT NULL);");
+    + "target text NULL);");
 });
 
 app.use(bodyParser.json()); // for parsing application/json
@@ -44,13 +43,14 @@ app.post('/cache', function (req, res) {
             if (err) {
                 console.log("Error: " + err);
             } else {
-                db.run('UPDATE cache SET target = "' + url + '" WHERE id = ' + id, null, function (result) {
-                    if (result.length == 0) {
-                        callback(false);
-                    } else {
-                        callback(true);
-                    }
-                });
+                var q = db.prepare('UPDATE cache SET target = "' + url + '" WHERE id = ' + id);
+                    q.run(function(err){
+                        if (err) {
+                            callback(false);
+                        } else {
+                            callback(true);
+                        }
+                    });
             }
         });
     };
@@ -63,10 +63,7 @@ app.post('/cache', function (req, res) {
             fs.writeFile(newPath, data, function (err) {
 
                 if (err) {
-                    // delete file
-                    if (filename != null) {
-                        fs.unlinkSync(filename);
-                    }
+                    fs.unlinkSync(newPath);
                     res.send(STATUS);
                 } else {
 
@@ -76,10 +73,13 @@ app.post('/cache', function (req, res) {
                     var longitude = req.body.longitude.replace(',', '.');
                     var altitude = req.body.altitude.replace(',', '.');
 
-                    db.run('INSERT INTO cache (description, picture, latitude, longitude, altitude) VALUES (\'' + description + '\',\'' + picture + '\',' + latitude + ',' + longitude + ',' + altitude + ') returning id', newPath, function (result) {
-                        computeTargetImage(result.id, picture, function (state) {
-                            res.send({status: state});
+                    var q = db.prepare('INSERT INTO cache (description, picture, latitude, longitude, altitude) VALUES ("' + description + '","' + picture + '",' + latitude + ',' + longitude + ',' + altitude + ')');
+                    q.run(function(err){
+                        if (err) throw err;
+                        computeTargetImage(this.lastID, picture, function (state) {
+                            res.send({status: true});
                         });
+
                     });
                 }
             });
@@ -88,21 +88,21 @@ app.post('/cache', function (req, res) {
 });
 
 app.get('/cache/:id', function (req, res) {
-    db.get('SELECT * FROM cache WHERE id = ' + req.params.id, null, function (result) {
-        if (result.length == 0) {
+    db.all('SELECT * FROM cache WHERE id = ' + req.params.id, function(err, rows) {
+        if (rows.length == 0) {
             res.send(STATUS);
         } else {
-            res.send(result);
+            res.send(rows);
         }
     });
 });
 
 app.get('/caches', function (req, res) {
-    db.get('SELECT * FROM cache', null, function (result) {
-        if (result.length == 0) {
+    db.all('SELECT * FROM cache', function(err, rows) {
+        if (rows.length == 0) {
             res.send(STATUS);
         } else {
-            res.send(result);
+            res.send(rows);
         }
     });
 });
