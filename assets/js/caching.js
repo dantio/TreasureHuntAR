@@ -3,6 +3,7 @@ var TreasureHuntAR = {
     magnifiersGeoObjects: [], // array of geoObject
     magnifierInVision: null,
     magnifierSize: 2,
+    huntingMode: false,
 
     /**
      * Called in HuntingActivity
@@ -34,7 +35,8 @@ var TreasureHuntAR = {
                         cam: [image]
                     },
                     onEnterFieldOfVision: TreasureHuntAR.inVision(poi),
-                    onExitFieldOfVision: TreasureHuntAR.exitVision(poi)
+                    onExitFieldOfVision: TreasureHuntAR.exitVision(poi),
+                    onClick: TreasureHuntAR.startHunting()
                 });
 
             this.magnifiersGeoObjects.push(poi.geoObject);
@@ -44,52 +46,76 @@ var TreasureHuntAR = {
         //AR.radar.enabled = true;
     },
 
-    // User tapped and want to hunt a treasure
-    startHunting: function () {
+    // User tapped and want to hunt Magnifier
+    startHuntingMagnifier: function () {
         // no magnifier
-        if (this.magnifierInVision == null) {
+        if (this.huntingMode || TreasureHuntAR.magnifierInVision == null) {
             return;
         }
 
         // disable all magnifier
-        for(var i = 0, l = this.magnifiersGeoObjects.length; i < l; i++) {
-            this.this.magnifiersGeoObjects[i].enabled = false;
+        for (var i = 0, l = TreasureHuntAR.magnifiersGeoObjects.length; i < l; i++) {
+            TreasureHuntAR.magnifiersGeoObjects[i].enabled = false;
         }
 
         // TODO change image?
         // enable magnifier
-        this.magnifierInVision.geoObject.enabled = true;
+        // we are hunting now!!
+        TreasureHuntAR.magnifierInVision.geoObject.enabled = true;
+        this.huntingMode = true;
+        this.hideDetails();
 
         // Add indicator to our magnifier
         var indicatorImg = new AR.ImageResource("img/indi.png");
         var imageDrawable = new AR.ImageDrawable(indicatorImg, 0.1, {
             verticalAnchor: AR.CONST.VERTICAL_ANCHOR.TOP
         });
-        this.magnifierInVision.geoObject.drawables.addIndicatorDrawable(imageDrawable);
 
+        TreasureHuntAR.magnifierInVision.geoObject.drawables.addIndicatorDrawable(imageDrawable);
+        document.location = "architectsdk://startHuntingMagnifier";
+    },
+
+    // User swiped down want to stop
+    stopHunting: function () {
+        if (!TreasureHuntAR.huntingMode) {
+            return;
+        }
+
+        // enable all magnifier
+        for (var i = 0, l = TreasureHuntAR.magnifiersGeoObjects.length; i < l; i++) {
+            TreasureHuntAR.magnifiersGeoObjects[i].enabled = true;
+        }
+
+        TreasureHuntAR.magnifierInVision.geoObject.drawables.removeIndicatorDrawable();
+        this.huntingMode = false;
     },
 
     inVision: function (poi) {
         return function () {
-            if (TreasureHuntAR.magnifierInVision != null) {
-                var userDistance1 = TreasureHuntAR.magnifierInVision.locations[0].distanceToUser();
-                var userDistance2 = poi.geoObject.locations[0].distanceToUser();
-                if (userDistance2 < userDistance1) {
+            if (!TreasureHuntAR.huntingMode) {
+                if (TreasureHuntAR.magnifierInVision != null) {
+                    // FIXME "Uncaught TypeError: Cannot read property '0' of undefined"
+                    var userDistance1 = TreasureHuntAR.magnifierInVision.geoObject.locations[0].distanceToUser();
+                    var userDistance2 = poi.geoObject.locations[0].distanceToUser();
+                    if (userDistance2 < userDistance1) {
+                        TreasureHuntAR.showDetails(poi);
+                        TreasureHuntAR.magnifierInVision = poi;
+                    }
+                } else {
                     TreasureHuntAR.showDetails(poi);
                     TreasureHuntAR.magnifierInVision = poi;
                 }
-            } else {
-                TreasureHuntAR.showDetails(poi);
-                TreasureHuntAR.magnifierInVision = poi;
             }
         };
     },
 
     exitVision: function (poi) {
         return function () {
-            if (TreasureHuntAR.magnifierInVision != null && TreasureHuntAR.magnifierInVision == poi) {
-                TreasureHuntAR.magnifierInVision = null;
-                TreasureHuntAR.hideDetails();
+            if (!TreasureHuntAR.huntingMode) {
+                if (TreasureHuntAR.magnifierInVision != null && TreasureHuntAR.magnifierInVision == poi) {
+                    TreasureHuntAR.magnifierInVision = null;
+                    TreasureHuntAR.hideDetails();
+                }
             }
         };
     },

@@ -1,10 +1,12 @@
 package de.htw.ar.treasurehuntar;
 
+import android.content.Context;
 import android.hardware.SensorManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.os.Bundle;
-import android.view.KeyEvent;
+import android.util.Log;
+import android.view.MotionEvent;
 import android.widget.Toast;
 import com.google.android.glass.touchpad.Gesture;
 import com.google.android.glass.touchpad.GestureDetector;
@@ -24,6 +26,14 @@ public class HuntingActivity extends AbstractArchitectActivity {
     protected JSONArray poiData;
     protected boolean isLoading = false;
 
+    // User go for magnifier
+    public static final String ACTION_START_HUNTING_MAGNIFIER = "startHuntingMagnifier";
+    public static final String ACTION_START_HUNTING_TREASURE = "startHuntingTreasure";
+
+    public boolean isHuntingMagnifier = false;
+    public boolean isHuntingTreasure = false;
+    public int huntingTreasureId = -1;
+
     /**
      * radius in m
      */
@@ -32,7 +42,7 @@ public class HuntingActivity extends AbstractArchitectActivity {
     /**
      * max tresures
      */
-    public static final int MAX_TRESURES = 2;
+    public static final int MAX_TRESURES = 5;
 
     /**
      * last time the calibration toast was shown, this avoids too many toast shown when compass needs calibration
@@ -40,14 +50,57 @@ public class HuntingActivity extends AbstractArchitectActivity {
     private long lastCalibrationToastShownTimeMillis = System
         .currentTimeMillis();
 
+    private GestureDetector mGestureDetector;
 
     @Override
-    public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if(keyCode ==  KeyEvent.KEYCODE_DPAD_CENTER){
-            // The touchpad was tapped
-            return true;
-        }
+    public void onCreate(Bundle savedInstanceState) {
+        mGestureDetector = createGestureDetector(this);
+        super.onCreate(savedInstanceState);
+    }
 
+    private GestureDetector createGestureDetector(Context context) {
+        GestureDetector gestureDetector = new GestureDetector(context);
+        //Create a base listener for generic gestures
+        gestureDetector.setBaseListener(new GestureDetector.BaseListener() {
+            @Override
+            public boolean onGesture(Gesture gesture) {
+                if (gesture == Gesture.TAP) {
+                    // do something on tap
+                    Log.i("gesture", "Tap");
+                    callJavaScript("TreasureHuntAR.startHunting");
+                    return true;
+                } else if (gesture == Gesture.SWIPE_DOWN) {
+                    if(isHuntingMagnifier) {
+                        callJavaScript("TreasureHuntAR.stopHuntingMagnifier");
+                        return true;
+                    } else if (isHuntingTreasure){
+                         return true;
+                    }
+
+                    finish();
+                    return false;
+                } else if (gesture == Gesture.SWIPE_RIGHT) {
+                    // do something on right (forward) swipe
+                    return true;
+                } else if (gesture == Gesture.SWIPE_LEFT) {
+                    // do something on left (backwards) swipe
+                    return true;
+                }
+                return false;
+            }
+        });
+
+        return gestureDetector;
+    }
+
+    /*
+     * Send generic motion events to the gesture detector
+     */
+    @Override
+    public boolean onGenericMotionEvent(MotionEvent event) {
+        if (mGestureDetector != null) {
+            return mGestureDetector.onMotionEvent(event);
+        }
         return false;
     }
 
@@ -75,10 +128,23 @@ public class HuntingActivity extends AbstractArchitectActivity {
     @Override
     public ArchitectUrlListener getUrlListener() {
         return new ArchitectUrlListener() {
-
             @Override
             public boolean urlWasInvoked(String uriString) {
-                // by default: no action applied when url was invoked
+
+                // TODO Uri uri = new Uri("uriString");
+                // starts with "architectsdk://"
+                String action = uriString.substring("architectsdk://".length());
+                if (action.startsWith(ACTION_START_HUNTING_MAGNIFIER)) {
+                    isHuntingMagnifier = true;
+                } else if (action.startsWith(ACTION_START_HUNTING_TREASURE)) {
+                    isHuntingTreasure = true;
+                    String idString = action.substring(
+                        ACTION_START_HUNTING_TREASURE.length() + "?id="
+                            .length());
+                    int treasureId = Integer.parseInt(idString);
+                    loadTreasureData(treasureId);
+                }
+
                 return false;
             }
         };
@@ -156,6 +222,14 @@ public class HuntingActivity extends AbstractArchitectActivity {
             final Thread t = new Thread(loadData);
             t.start();
         }
+    }
+
+    /**
+     * Get target image and sound from server
+     * @param treasureId
+     */
+    private void loadTreasureData(int treasureId) {
+            Log.i("load", "treasure sound and image tracking");
     }
 
     /**
@@ -248,4 +322,5 @@ public class HuntingActivity extends AbstractArchitectActivity {
 
         return new double[] { foundLatitude, foundLongitude };
     }
+
 }
