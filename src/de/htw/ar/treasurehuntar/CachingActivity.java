@@ -1,10 +1,22 @@
 package de.htw.ar.treasurehuntar;
 
+import android.content.Context;
+import android.content.Intent;
 import android.hardware.SensorManager;
 import android.location.LocationListener;
+import android.os.Bundle;
+import android.os.FileObserver;
+import android.provider.MediaStore;
+import android.util.Log;
+import android.view.MotionEvent;
 import android.widget.Toast;
+import com.google.android.glass.content.Intents;
+import com.google.android.glass.touchpad.Gesture;
+import com.google.android.glass.touchpad.GestureDetector;
 import com.wikitude.architect.ArchitectView.ArchitectUrlListener;
 import com.wikitude.architect.ArchitectView.SensorAccuracyChangeListener;
+
+import java.io.File;
 
 /**
  * Schätze verstecken
@@ -26,6 +38,14 @@ public class CachingActivity extends AbstractArchitectActivity {
      */
     private long lastCalibrationToastShownTimeMillis = System
         .currentTimeMillis();
+
+    private GestureDetector mGestureDetector;
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        mGestureDetector = createGestureDetector(this);
+        super.onCreate(savedInstanceState);
+    }
 
     @Override
     public String getARchitectWorldPath() {
@@ -96,4 +116,110 @@ public class CachingActivity extends AbstractArchitectActivity {
         return 50;
     }
 
+    private GestureDetector createGestureDetector(Context context) {
+        GestureDetector gestureDetector = new GestureDetector(context);
+        //Create a base listener for generic gestures
+        gestureDetector.setBaseListener(new GestureDetector.BaseListener() {
+            @Override
+            public boolean onGesture(Gesture gesture) {
+                if (gesture == Gesture.TAP) {
+                    // do something on tap
+                    Log.i("gesture", "Tap");
+                    takePicture();
+                    return true;
+                }
+                return false;
+            }
+        });
+
+        return gestureDetector;
+    }
+
+    /*
+ * Send generic motion events to the gesture detector
+ */
+    @Override
+    public boolean onGenericMotionEvent(MotionEvent event) {
+        if (mGestureDetector != null) {
+            return mGestureDetector.onMotionEvent(event);
+        }
+        return false;
+    }
+    // take picture logic
+    private static final int TAKE_PICTURE_REQUEST = 1;
+
+    private void takePicture() {
+        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        startActivityForResult(intent, TAKE_PICTURE_REQUEST);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == TAKE_PICTURE_REQUEST && resultCode == RESULT_OK) {
+            String thumbnailPath = data.getStringExtra(Intents.EXTRA_THUMBNAIL_FILE_PATH);
+            String picturePath = data.getStringExtra(Intents.EXTRA_PICTURE_FILE_PATH);
+
+            processPictureWhenReady(picturePath);
+            // TODO: Show the thumbnail to the user while the full picture is being
+            // processed.
+        }
+
+        super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    private void processPictureWhenReady(final String picturePath) {
+        final File pictureFile = new File(picturePath);
+
+        if (pictureFile.exists()) {
+            // The picture is ready; process it.
+            //http://vegapunk.de:9999/cache
+            sendPostRequest();
+        } else {
+            // The file does not exist yet. Before starting the file observer, you
+            // can update your UI to let the user know that the application is
+            // waiting for the picture (for example, by displaying the thumbnail
+            // image and a progress indicator).
+
+            final File parentDirectory = pictureFile.getParentFile();
+            FileObserver observer = new FileObserver(parentDirectory.getPath(),
+                    FileObserver.CLOSE_WRITE | FileObserver.MOVED_TO) {
+                // Protect against additional pending events after CLOSE_WRITE
+                // or MOVED_TO is handled.
+                private boolean isFileWritten;
+
+                @Override
+                public void onEvent(int event, String path) {
+                    if (!isFileWritten) {
+                        // For safety, make sure that the file that was created in
+                        // the directory is actually the one that we're expecting.
+                        File affectedFile = new File(parentDirectory, path);
+                        isFileWritten = affectedFile.equals(pictureFile);
+
+                        if (isFileWritten) {
+                            stopWatching();
+
+                            // Now that the file is ready, recursively call
+                            // processPictureWhenReady again (on the UI thread).
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    processPictureWhenReady(picturePath);
+                                }
+                            });
+                        }
+                    }
+                }
+            };
+            observer.startWatching();
+        }
+    }
+
+    private String sendPostRequest() {
+        /*HttpClient httpclient = new DefaultHttpClient();
+        HttpPost httppost = new HttpPost("http://vegapunk.de:9999/cache");
+        httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
+        HttpResponse response = httpclient.execute(httppost);
+        String the_string_response = con*/
+        return "Pic taken";
+    }
 }
