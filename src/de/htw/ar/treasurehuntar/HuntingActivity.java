@@ -49,7 +49,7 @@ public class HuntingActivity extends AbstractArchitectActivity {
      * last time the calibration toast was shown, this avoids too many toast shown when compass needs calibration
      */
     private long lastCalibrationToastShownTimeMillis = System
-        .currentTimeMillis();
+            .currentTimeMillis();
 
     private GestureDetector mGestureDetector;
 
@@ -71,11 +71,11 @@ public class HuntingActivity extends AbstractArchitectActivity {
                     callJavaScript("TreasureHuntAR.startHunting");
                     return true;
                 } else if (gesture == Gesture.SWIPE_DOWN) {
-                    if(isHuntingMagnifier) {
+                    if (isHuntingMagnifier) {
                         callJavaScript("TreasureHuntAR.stopHuntingMagnifier");
                         return true;
-                    } else if (isHuntingTreasure){
-                         return true;
+                    } else if (isHuntingTreasure) {
+                        return true;
                     }
 
                     finish();
@@ -112,15 +112,15 @@ public class HuntingActivity extends AbstractArchitectActivity {
             public void onCompassAccuracyChanged(int accuracy) {
                 /* UNRELIABLE = 0, LOW = 1, MEDIUM = 2, HIGH = 3 */
                 if (accuracy < SensorManager.SENSOR_STATUS_ACCURACY_MEDIUM
-                    && HuntingActivity.this != null && !HuntingActivity.this
-                    .isFinishing() && System.currentTimeMillis()
-                    - HuntingActivity.this.lastCalibrationToastShownTimeMillis
-                    > 5 * 1000) {
+                        && HuntingActivity.this != null && !HuntingActivity.this
+                        .isFinishing() && System.currentTimeMillis()
+                        - HuntingActivity.this.lastCalibrationToastShownTimeMillis
+                        > 5 * 1000) {
                     Toast.makeText(HuntingActivity.this,
-                        R.string.compass_accuracy_low, Toast.LENGTH_LONG)
-                        .show();
+                            R.string.compass_accuracy_low, Toast.LENGTH_LONG)
+                            .show();
                     HuntingActivity.this.lastCalibrationToastShownTimeMillis = System
-                        .currentTimeMillis();
+                            .currentTimeMillis();
                 }
             }
         };
@@ -140,10 +140,12 @@ public class HuntingActivity extends AbstractArchitectActivity {
                 } else if (action.startsWith(ACTION_START_HUNTING_TREASURE)) {
                     isHuntingTreasure = true;
                     String idString = action.substring(
-                        ACTION_START_HUNTING_TREASURE.length() + "?id="
-                            .length());
+                            ACTION_START_HUNTING_TREASURE.length() + "?id="
+                                    .length());
                     int treasureId = Integer.parseInt(idString);
                     loadTreasureData(treasureId);
+                } else if (action.startsWith(ACTION_STOP_HUNTING_TREASURE)) {
+                    isHuntingMagnifier = false;
                 }
 
                 return false;
@@ -153,7 +155,7 @@ public class HuntingActivity extends AbstractArchitectActivity {
 
     @Override
     public LocationProvider getLocationProvider(
-        final LocationListener locationListener) {
+            final LocationListener locationListener) {
         return new LocationProvider(this, locationListener);
     }
 
@@ -172,20 +174,20 @@ public class HuntingActivity extends AbstractArchitectActivity {
             final int WAIT_FOR_LOCATION_STEP_MS = 5000;
 
             while (
-                HuntingActivity.this.lastKnownLocation == null
-                    && !HuntingActivity.this.isFinishing()) {
+                    HuntingActivity.this.lastKnownLocation == null
+                            && !HuntingActivity.this.isFinishing()) {
 
                 HuntingActivity.this
-                    .runOnUiThread(new Runnable() {
+                        .runOnUiThread(new Runnable() {
 
-                        @Override
-                        public void run() {
-                            Toast.makeText(
-                                HuntingActivity.this,
-                                R.string.location_fetching, Toast.LENGTH_SHORT)
-                                .show();
-                        }
-                    });
+                            @Override
+                            public void run() {
+                                Toast.makeText(
+                                        HuntingActivity.this,
+                                        R.string.location_fetching, Toast.LENGTH_SHORT)
+                                        .show();
+                            }
+                        });
 
                 try {
                     Thread.sleep(WAIT_FOR_LOCATION_STEP_MS);
@@ -195,17 +197,17 @@ public class HuntingActivity extends AbstractArchitectActivity {
             }
 
             if (HuntingActivity.this.lastKnownLocation != null
-                && !HuntingActivity.this.isFinishing()) {
+                    && !HuntingActivity.this.isFinishing()) {
                 // TODO: you may replace this dummy implementation and instead load POI information e.g. from your database
                 HuntingActivity.this.poiData = HuntingActivity
-                    .getPoiInformation(
-                        HuntingActivity.this.lastKnownLocation,
-                        MAX_TRESURES);
+                        .getPoiInformation(
+                                HuntingActivity.this.lastKnownLocation,
+                                MAX_TRESURES);
 
                 HuntingActivity.this
-                    .callJavaScript("TreasureHuntAR.hunting", new String[] {
-                        HuntingActivity.this.poiData
-                            .toString() });
+                        .callJavaScript("TreasureHuntAR.hunting", new String[]{
+                                HuntingActivity.this.poiData
+                                        .toString()});
             }
 
             HuntingActivity.this.isLoading = false;
@@ -227,10 +229,11 @@ public class HuntingActivity extends AbstractArchitectActivity {
 
     /**
      * Get target image and sound from server
+     *
      * @param treasureId
      */
     private void loadTreasureData(int treasureId) {
-            Log.i("load", "treasure sound and image tracking");
+        Log.i("load", "treasure sound and image tracking");
     }
 
     /**
@@ -241,7 +244,7 @@ public class HuntingActivity extends AbstractArchitectActivity {
      * @return POI information in JSONArray
      */
     public static JSONArray getPoiInformation(final Location userLocation,
-        final int numberOfPlaces) {
+                                              final int numberOfPlaces) {
 
         if (userLocation == null) {
             return null;
@@ -269,16 +272,16 @@ public class HuntingActivity extends AbstractArchitectActivity {
             poiInformation.put(ATTR_RESOURCE, "img/magnifier.png");
             // Description
             poiInformation
-                .put(ATTR_DESCRIPTION, "This is the description of POI#" + i);
+                    .put(ATTR_DESCRIPTION, "This is the description of POI#" + i);
 
             double[] poiLocationLatLon = getRandomLatLonNearby(
-                userLocation.getLatitude(), userLocation.getLongitude(),
-                MAX_RADIUS);
+                    userLocation.getLatitude(), userLocation.getLongitude(),
+                    MAX_RADIUS);
 
             poiInformation
-                .put(ATTR_LATITUDE, String.valueOf(poiLocationLatLon[0]));
+                    .put(ATTR_LATITUDE, String.valueOf(poiLocationLatLon[0]));
             poiInformation
-                .put(ATTR_LONGITUDE, String.valueOf(poiLocationLatLon[1]));
+                    .put(ATTR_LONGITUDE, String.valueOf(poiLocationLatLon[1]));
 
             final float UNKNOWN_ALTITUDE = -32768f;  // equals "AR.CONST.UNKNOWN_ALTITUDE" in JavaScript (compare AR.GeoLocation specification)
             // Use "AR.CONST.UNKNOWN_ALTITUDE" to tell ARchitect that altitude of places should be on user level. Be aware to handle altitude properly in locationManager in case you use valid POI altitude value (e.g. pass altitude only if GPS accuracy is <7m).
@@ -297,13 +300,13 @@ public class HuntingActivity extends AbstractArchitectActivity {
      * @return lat/lon values in given position's vicinity
      */
     private static double[] getRandomLatLonNearby(final double lat,
-        final double lon) {
-        return new double[] { lat + Math.random() / 5 - 0.1,
-            lon + Math.random() / 5 - 0.1 };
+                                                  final double lon) {
+        return new double[]{lat + Math.random() / 5 - 0.1,
+                lon + Math.random() / 5 - 0.1};
     }
 
     private static double[] getRandomLatLonNearby(double lat, double lon,
-        int radius) {
+                                                  int radius) {
         Random random = new Random();
 
         // Convert radius from meters to degrees
@@ -322,7 +325,7 @@ public class HuntingActivity extends AbstractArchitectActivity {
         double foundLongitude = new_x + lon;
         double foundLatitude = y + lat;
 
-        return new double[] { foundLatitude, foundLongitude };
+        return new double[]{foundLatitude, foundLongitude};
     }
 
 }
