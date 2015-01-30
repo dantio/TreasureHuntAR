@@ -26,13 +26,25 @@ var TreasureHuntAR = {
             //});
 
             var image = new AR.ImageDrawable(new AR.ImageResource(poiData[i].res), this.magnifierSize);
+            var label = new AR.Label("distance",1, {
+                offsetY: -this.magnifierSize / 2,
+                verticalAnchor: AR.CONST.VERTICAL_ANCHOR.TOP,
+                opacity: 0.9,
+                enabled: false,
+                zOrder: 1,
+                style: {
+                    textColor: '#FFFFFF',
+                    backgroundColor: '#00000005'
+                }
+            });
+
 
             var poi = this.magnifiers[poiData[i].id] = {};
             poi.poiData = poiData[i];
             poi.geoObject = new AR.GeoObject(
                 location, {
                     drawables: {
-                        cam: [image]
+                        cam: [image, label]
                     },
                     onEnterFieldOfVision: TreasureHuntAR.inVision(poi),
                     onExitFieldOfVision: TreasureHuntAR.exitVision(poi),
@@ -63,7 +75,6 @@ var TreasureHuntAR = {
         // we are hunting now!!
         TreasureHuntAR.magnifierInVision.geoObject.enabled = true;
         this.huntingMode = true;
-        this.hideDetails();
 
         // Add indicator to our magnifier
         var indicatorImg = new AR.ImageResource("img/indi.png");
@@ -76,7 +87,7 @@ var TreasureHuntAR = {
     },
 
     // User swiped down want to stop
-    stopHunting: function () {
+    stopHuntingMagnifier: function () {
         if (!TreasureHuntAR.huntingMode) {
             return;
         }
@@ -88,6 +99,8 @@ var TreasureHuntAR = {
 
         TreasureHuntAR.magnifierInVision.geoObject.drawables.removeIndicatorDrawable();
         this.huntingMode = false;
+
+        document.location = "architectsdk://stopHuntingMagnifier";
     },
 
     inVision: function (poi) {
@@ -98,6 +111,7 @@ var TreasureHuntAR = {
                     var userDistance1 = TreasureHuntAR.magnifierInVision.geoObject.locations[0].distanceToUser();
                     var userDistance2 = poi.geoObject.locations[0].distanceToUser();
                     if (userDistance2 < userDistance1) {
+                        TreasureHuntAR.hideDetails(TreasureHuntAR.magnifierInVision);
                         TreasureHuntAR.showDetails(poi);
                         TreasureHuntAR.magnifierInVision = poi;
                     }
@@ -114,19 +128,27 @@ var TreasureHuntAR = {
             if (!TreasureHuntAR.huntingMode) {
                 if (TreasureHuntAR.magnifierInVision != null && TreasureHuntAR.magnifierInVision == poi) {
                     TreasureHuntAR.magnifierInVision = null;
-                    TreasureHuntAR.hideDetails();
+                    TreasureHuntAR.hideDetails(poi);
                 }
             }
         };
     },
 
     showDetails: function (poi) {
-        document.getElementById("name").innerHTML = poi.poiData.name;
-        document.getElementById("info").setAttribute("class", "infoVisible");
-        document.getElementById("distance").innerHTML = poi.geoObject.locations[0].distanceToUser();
+        //var distance = poi.geoObject.locations[0].distanceToUser();
+
+        var label = poi.geoObject.drawables.cam[1];
+        label.enabled = true;
+        label.text = Math.round(poi.geoObject.locations[0].distanceToUser()) + " meter";
+
+        //document.getElementById("name").innerHTML = poi.poiData.name;
+        //document.getElementById("info").setAttribute("class", "infoVisible");
+        //document.getElementById("distance").innerHTML = poi.geoObject.locations[0].distanceToUser();
     },
 
-    hideDetails: function () {
-        document.getElementById("info").setAttribute("class", "info");
+    hideDetails: function (poi) {
+        var label = poi.geoObject.drawables.cam[1];
+        label.enabled = false;
+        //document.getElementById("info").setAttribute("class", "info");
     }
 };

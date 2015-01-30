@@ -28,6 +28,7 @@ public class HuntingActivity extends AbstractArchitectActivity {
 
     // User go for magnifier
     public static final String ACTION_START_HUNTING_MAGNIFIER = "startHuntingMagnifier";
+    public static final String ACTION_STOP_HUNTING_TREASURE = "stopHuntingMagnifier";
     public static final String ACTION_START_HUNTING_TREASURE = "startHuntingTreasure";
 
     public boolean isHuntingMagnifier = false;
@@ -257,6 +258,7 @@ public class HuntingActivity extends AbstractArchitectActivity {
         final String ATTR_LONGITUDE = "longitude";
         final String ATTR_ALTITUDE = "altitude";
 
+        // Http.get(/glass).done(function(){})
         for (int i = 0; i < numberOfPlaces; i++) {
             final HashMap<String, String> poiInformation = new HashMap<>();
             // Id
