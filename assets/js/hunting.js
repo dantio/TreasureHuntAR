@@ -4,6 +4,7 @@ var TreasureHuntAR = {
     magnifierInVision: null,
     magnifierSize: 2,
     huntingMode: false,
+    radius: 30, // 30m
 
     /**
      * Called in HuntingActivity
@@ -18,12 +19,6 @@ var TreasureHuntAR = {
                 parseFloat(poiData[i].latitude),
                 parseFloat(poiData[i].longitude),
                 parseFloat(poiData[i].altitude));
-
-            //var actionRange2 = new AR.ActionRange(location1, 500, {
-            //    onEnter : function() {
-            //        actionRange2.enabled = false; //an ActionArea which can only be entered once
-            //    }
-            //});
 
             var image = new AR.ImageDrawable(new AR.ImageResource(poiData[i].res), this.magnifierSize);
             var label = new AR.Label("distance",1, {
@@ -84,6 +79,13 @@ var TreasureHuntAR = {
 
         TreasureHuntAR.magnifierInVision.geoObject.drawables.addIndicatorDrawable(imageDrawable);
         document.location = "architectsdk://startHuntingMagnifier";
+
+        var actionRange2 = new AR.ActionRange(TreasureHuntAR.magnifierInVision.geoObject.locations[0], this.radius, {
+            onEnter : function() {
+                document.location = "architectsdk://startHuntingTreasure?id=" + TreasureHuntAR.magnifierInVision.geoData.id;
+                actionRange2.enabled = false; //an ActionArea which can only be entered once
+            }
+        });
     },
 
     // User swiped down want to stop
