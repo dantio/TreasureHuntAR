@@ -2,11 +2,14 @@ package de.htw.ar.treasurehuntar;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.hardware.SensorManager;
 import android.location.LocationListener;
 import android.os.Bundle;
 import android.os.FileObserver;
 import android.provider.MediaStore;
+import android.util.Base64;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.widget.Toast;
@@ -15,8 +18,21 @@ import com.google.android.glass.touchpad.Gesture;
 import com.google.android.glass.touchpad.GestureDetector;
 import com.wikitude.architect.ArchitectView.ArchitectUrlListener;
 import com.wikitude.architect.ArchitectView.SensorAccuracyChangeListener;
+import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.message.BasicNameValuePair;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.List;
 
 /**
  * Schätze verstecken
@@ -173,7 +189,8 @@ public class CachingActivity extends AbstractArchitectActivity {
         if (pictureFile.exists()) {
             // The picture is ready; process it.
             //http://vegapunk.de:9999/cache
-            sendPostRequest();
+            sendPostRequest(pictureFile);
+
         } else {
             // The file does not exist yet. Before starting the file observer, you
             // can update your UI to let the user know that the application is
@@ -214,12 +231,38 @@ public class CachingActivity extends AbstractArchitectActivity {
         }
     }
 
-    private String sendPostRequest() {
-        /*HttpClient httpclient = new DefaultHttpClient();
-        HttpPost httppost = new HttpPost("http://vegapunk.de:9999/cache");
-        httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
-        HttpResponse response = httpclient.execute(httppost);
-        String the_string_response = con*/
-        return "Pic taken";
+    private HttpResponse sendPostRequest(File fileToSend) {
+        // Create a new HttpClient and Post Header
+        HttpClient httpclient = new DefaultHttpClient();
+        HttpPost httppost = new HttpPost("http://vegapunk.de:9999/test");
+
+        try {
+            // Add your data
+            List<NameValuePair> nameValuePairs = new ArrayList<>(2);
+            Calendar c = Calendar.getInstance();
+            int date = c.get(Calendar.DATE);
+
+            Bitmap bitmap = BitmapFactory.decodeFile(fileToSend.getPath());
+            ByteArrayOutputStream stream = new ByteArrayOutputStream();
+            bitmap.compress(Bitmap.CompressFormat.PNG, 90, stream); //compress to which format you want.
+            byte [] byte_arr = stream.toByteArray();
+            String image_str = Base64.encodeToString(byte_arr, Base64.DEFAULT);
+
+            nameValuePairs.add(new BasicNameValuePair("description", "Treasure-"+date));
+            nameValuePairs.add(new BasicNameValuePair("latitude", "30"));
+            nameValuePairs.add(new BasicNameValuePair("longitude", "30"));
+            nameValuePairs.add(new BasicNameValuePair("altitude", "30"));
+            nameValuePairs.add(new BasicNameValuePair("file", image_str));
+            httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
+
+            // Execute HTTP Post Request
+             HttpResponse response = httpclient.execute(httppost);
+            return response;
+        } catch (ClientProtocolException e) {
+            // TODO Auto-generated catch block
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+        }
+        return null;
     }
 }
