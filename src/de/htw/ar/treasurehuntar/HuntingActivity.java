@@ -261,36 +261,58 @@ public class HuntingActivity extends AbstractArchitectActivity {
         final String ATTR_LONGITUDE = "longitude";
         final String ATTR_ALTITUDE = "altitude";
 
-        // Http.get(/glass).done(function(){})
-        for (int i = 0; i < numberOfPlaces; i++) {
-            final HashMap<String, String> poiInformation = new HashMap<>();
-            // Id
-            poiInformation.put(ATTR_ID, String.valueOf(i));
-            // Name
-            poiInformation.put(ATTR_NAME, "POI#" + i);
-            // Image e. g. (treasure, hint)
-            poiInformation.put(ATTR_RESOURCE, "img/magnifier.png");
-            // Description
-            poiInformation
-                    .put(ATTR_DESCRIPTION, "This is the description of POI#" + i);
+        getCaches gC = new getCaches();
 
-            double[] poiLocationLatLon = getRandomLatLonNearby(
-                    userLocation.getLatitude(), userLocation.getLongitude(),
-                    MAX_RADIUS);
+        JSONArray js = new JSONArray();
+        js = gC.execute("http://www.vegapunk.de:9999/caches").get();
+        //get example
+        //[{"id":1,"description":"bla bla bla","picture":"bild.jpg","latitude":34.43443,"longitude":43.54355,"altitude":43.545,"target":"http://s3-eu-west-1.amazonaws.com/web-api-hosting/jwtc/54afd1bccb34cdd16d3f67f6/20150131/JOs5iFUz/target-collections.wtc"}]
 
-            poiInformation
-                    .put(ATTR_LATITUDE, String.valueOf(poiLocationLatLon[0]));
-            poiInformation
-                    .put(ATTR_LONGITUDE, String.valueOf(poiLocationLatLon[1]));
+            for(int i = 0; i < js.length(); i++){
+                final HashMap<String, String> poiInformation = new HashMap<>();
+                // Id
+                poiInformation.put(ATTR_ID, js.getJSONObject(i).getString("id"));
+                // Name
+                poiInformation.put(ATTR_NAME, "POI#" + js.getJSONObject(i).getString("id"));
+                // Image e. g. (treasure, hint)
+                poiInformation.put(ATTR_RESOURCE, "img/magnifier.png");
+                // Description
+                poiInformation.put(ATTR_DESCRIPTION, js.getJSONObject(i).getString("description"));
 
-            final float UNKNOWN_ALTITUDE = -32768f;  // equals "AR.CONST.UNKNOWN_ALTITUDE" in JavaScript (compare AR.GeoLocation specification)
-            // Use "AR.CONST.UNKNOWN_ALTITUDE" to tell ARchitect that altitude of places should be on user level. Be aware to handle altitude properly in locationManager in case you use valid POI altitude value (e.g. pass altitude only if GPS accuracy is <7m).
-            poiInformation.put(ATTR_ALTITUDE, String.valueOf(UNKNOWN_ALTITUDE));
-            pois.put(new JSONObject(poiInformation));
-        }
+                //latitude
+                poiInformation.put(ATTR_LATITUDE, js.getJSONObject(i).getString("latitude"));
+                //longitude
+                poiInformation.put(ATTR_LONGITUDE, js.getJSONObject(i).getString("longitude"));
+                //altitude
+                poiInformation.put(ATTR_ALTITUDE, js.getJSONObject(i).getString("altitude"));
+
+                pois.put(new JSONObject(poiInformation));
+            }
 
         return pois;
     }
+
+        class getCaches extends AsyncTask<String, Void, JSONArray> {
+            @Override
+            protected JSONArray doInBackground(String... urls) {
+                try {
+                    HttpGet httppost = new HttpGet(urls[0]);
+                    HttpClient httpclient = new DefaultHttpClient();
+                    HttpResponse response = httpclient.execute(httppost);
+                    int status = response.getStatusLine().getStatusCode();
+                    if (status == 200) {
+                        HttpEntity entity = response.getEntity();
+                        String data = EntityUtils.toString(entity);
+                        return new JSONArray(data);
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }catch (JSONException e) {
+                    e.printStackTrace();
+                }
+                return null;
+            }
+        }
 
     /**
      * helper for creation of dummy places.
