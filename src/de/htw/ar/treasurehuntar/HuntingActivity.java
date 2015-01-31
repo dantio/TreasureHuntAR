@@ -37,11 +37,17 @@ public class HuntingActivity extends AbstractArchitectActivity {
 
     // User go for magnifier
     public static final String ACTION_START_HUNTING_MAGNIFIER = "startHuntingMagnifier";
-    public static final String ACTION_STOP_HUNTING_TREASURE = "stopHuntingMagnifier";
-    public static final String ACTION_START_HUNTING_TREASURE = "startHuntingTreasure";
+    public static final String ACTION_STOP_HUNTING_MAGNIFIER = "stopHuntingMagnifier";
 
+    // User is in magnifier action range and start hunting treasure
+    public static final String ACTION_START_HUNTING_TREASURE = "startHuntingTreasure";
+    public static final String ACTION_STOP_HUNTING_TREASURE = "startHuntingTreasure";
+
+    // State
     public boolean isHuntingMagnifier = false;
     public boolean isHuntingTreasure = false;
+
+    // Treasure to hunt
     public int huntingTreasureId = -1;
 
     /**
@@ -52,7 +58,7 @@ public class HuntingActivity extends AbstractArchitectActivity {
     /**
      * max tresures
      */
-    public static final int MAX_TRESURES = 5;
+    public static final int MIN_TRESURES = 20;
 
     /**
      * last time the calibration toast was shown, this avoids too many toast shown when compass needs calibration
@@ -77,11 +83,11 @@ public class HuntingActivity extends AbstractArchitectActivity {
                 if (gesture == Gesture.TAP) {
                     // do something on tap
                     Log.i("gesture", "Tap");
-                    callJavaScript("TreasureHuntAR.startHunting");
+                    callJavaScript("TreasureHuntAR." + ACTION_START_HUNTING_MAGNIFIER);
                     return true;
                 } else if (gesture == Gesture.SWIPE_DOWN) {
                     if (isHuntingMagnifier) {
-                        callJavaScript("TreasureHuntAR.stopHuntingMagnifier");
+                        callJavaScript("TreasureHuntAR." + ACTION_STOP_HUNTING_MAGNIFIER);
                         return true;
                     } else if (isHuntingTreasure) {
                         return true;
@@ -90,10 +96,10 @@ public class HuntingActivity extends AbstractArchitectActivity {
                     finish();
                     return false;
                 } else if (gesture == Gesture.SWIPE_RIGHT) {
-                    // do something on right (forward) swipe
+                    // TODO select next magnifier
                     return true;
                 } else if (gesture == Gesture.SWIPE_LEFT) {
-                    // do something on left (backwards) swipe
+                    // TODO select prev magnifier
                     return true;
                 }
                 return false;
@@ -150,7 +156,7 @@ public class HuntingActivity extends AbstractArchitectActivity {
                                     .length());
                     int treasureId = Integer.parseInt(idString);
                     loadTreasureData(treasureId);
-                } else if (action.startsWith(ACTION_STOP_HUNTING_TREASURE)) {
+                } else if (action.startsWith(ACTION_STOP_HUNTING_MAGNIFIER)) {
                     isHuntingMagnifier = false;
                 }
 
@@ -197,9 +203,15 @@ public class HuntingActivity extends AbstractArchitectActivity {
      *
      * @return POI information in JSONArray
      */
-    public JSONArray getPoiInformation(final JSONArray js) {
+    public JSONArray getPoiInformation(final JSONArray js, int minTreasures) {
 
         final JSONArray pois = new JSONArray();
+
+        // equals "AR.CONST.UNKNOWN_ALTITUDE" in JavaScript (compare AR.GeoLocation specification)
+        // Use "AR.CONST.UNKNOWN_ALTITUDE" to tell ARchitect that altitude of places should be on user level.
+        // Be aware to handle altitude properly in locationManager in case you use valid POI altitude
+        // value (e.g. pass altitude only if GPS accuracy is <7m).
+        final float UNKNOWN_ALTITUDE = -32768f;
 
         // ensure these attributes are also used in JavaScript when extracting POI data
         final String ATTR_ID = "id";
@@ -210,34 +222,42 @@ public class HuntingActivity extends AbstractArchitectActivity {
         final String ATTR_LONGITUDE = "longitude";
         final String ATTR_ALTITUDE = "altitude";
 
-        //get example
-        //[{"id":1,"description":"bla bla bla","picture":"bild.jpg","latitude":34.43443,"longitude":43.54355,"altitude":43.545,"target":"http://s3-eu-west-1.amazonaws.com/web-api-hosting/jwtc/54afd1bccb34cdd16d3f67f6/20150131/JOs5iFUz/target-collections.wtc"}]
+        if (js != null) {
+            for (int i = 0; i < js.length(); i++) {
+                try {
+                    final HashMap<String, String> poiInformation = new HashMap<>();
+                    poiInformation.put(ATTR_ID, js.getJSONObject(i).getString("id"));
+                    poiInformation.put(ATTR_NAME, "POI#" + js.getJSONObject(i).getString("id"));
+                    poiInformation.put(ATTR_RESOURCE, "img/magnifier.png"); // Image e. g. (treasure, hint)
+                    poiInformation.put(ATTR_DESCRIPTION, js.getJSONObject(i).getString("description"));
+                    poiInformation.put(ATTR_LATITUDE, js.getJSONObject(i).getString("latitude"));
+                    poiInformation.put(ATTR_LONGITUDE, js.getJSONObject(i).getString("longitude"));
+                    poiInformation.put(ATTR_ALTITUDE, js.getJSONObject(i).getString("altitude"));
 
-        for (int i = 0; i < js.length(); i++) {
-
-            try {
-                final HashMap<String, String> poiInformation = new HashMap<>();
-                // Id
-                poiInformation.put(ATTR_ID, js.getJSONObject(i).getString("id"));
-
-                // Name
-                poiInformation.put(ATTR_NAME, "POI#" + js.getJSONObject(i).getString("id"));
-                // Image e. g. (treasure, hint)
-                poiInformation.put(ATTR_RESOURCE, "img/magnifier.png");
-                // Description
-                poiInformation.put(ATTR_DESCRIPTION, js.getJSONObject(i).getString("description"));
-
-                //latitude
-                poiInformation.put(ATTR_LATITUDE, js.getJSONObject(i).getString("latitude"));
-                //longitude
-                poiInformation.put(ATTR_LONGITUDE, js.getJSONObject(i).getString("longitude"));
-                //altitude
-                poiInformation.put(ATTR_ALTITUDE, js.getJSONObject(i).getString("altitude"));
-
-                pois.put(new JSONObject(poiInformation));
-            } catch (JSONException e) {
-                e.printStackTrace();
+                    pois.put(new JSONObject(poiInformation));
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
             }
+        }
+
+        // fill with random treasures
+        for (int i = pois.length(); i < minTreasures; i++) {
+            final HashMap<String, String> poiInformation = new HashMap<>();
+            poiInformation.put(ATTR_ID, String.valueOf(i));
+            poiInformation.put(ATTR_NAME, "POI#" + i);
+            poiInformation.put(ATTR_RESOURCE, "img/magnifier.png"); // Image e. g. (treasure, hint)
+            poiInformation.put(ATTR_DESCRIPTION, "This is the description of POI#" + i);
+
+            double[] poiLocationLatLon = getRandomLatLonNearby(
+                    lastKnownLocation.getLatitude(), lastKnownLocation.getLongitude(),
+                    MAX_RADIUS);
+
+            poiInformation.put(ATTR_LATITUDE, String.valueOf(poiLocationLatLon[0]));
+            poiInformation.put(ATTR_LONGITUDE, String.valueOf(poiLocationLatLon[1]));
+            poiInformation.put(ATTR_ALTITUDE, String.valueOf(UNKNOWN_ALTITUDE));
+
+            pois.put(new JSONObject(poiInformation));
         }
 
         return pois;
@@ -249,20 +269,19 @@ public class HuntingActivity extends AbstractArchitectActivity {
         @Override
         protected void onPreExecute() {
 
-            if (HuntingActivity.this.isLoading) {
+            if (isLoading) {
                 Log.i("LoadCaches", "Task already started");
                 cancel(true);
             }
 
-            if (HuntingActivity.this.lastKnownLocation == null
-                    && !HuntingActivity.this.isFinishing()) {
+            if (lastKnownLocation == null && !isFinishing()) {
                 Toast.makeText(
                         HuntingActivity.this,
                         R.string.location_fetching, Toast.LENGTH_SHORT)
                         .show();
             }
 
-            HuntingActivity.this.isLoading = true;
+            isLoading = true;
         }
 
         @Override
@@ -270,8 +289,7 @@ public class HuntingActivity extends AbstractArchitectActivity {
 
             // wait till we have good location
             while (
-                    HuntingActivity.this.lastKnownLocation == null
-                            && !HuntingActivity.this.isFinishing()) {
+                    lastKnownLocation == null && !isFinishing()) {
                 try {
                     Thread.sleep(WAIT_FOR_LOCATION_STEP_MS);
                 } catch (InterruptedException e) {
@@ -289,44 +307,41 @@ public class HuntingActivity extends AbstractArchitectActivity {
                 if (status == 200) {
                     HttpEntity entity = response.getEntity();
                     String data = EntityUtils.toString(entity);
+
                     return new JSONArray(data);
                 }
 
             } catch (IOException | JSONException ex) {
                 ex.printStackTrace();
+                Log.e("LoadCaches", "No Server conncection");
             }
 
             return null;
         }
 
         protected void onPostExecute(JSONArray result) {
-            if (result != null) {
-                try {
-                    HuntingActivity.this.poiData = new JSONArray(result);
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
 
-                HuntingActivity.this.poiData = getPoiInformation(result);
-                HuntingActivity.this
-                        .callJavaScript("TreasureHuntAR.hunting", new String[]{
-                                HuntingActivity.this.poiData
-                                        .toString()});
-
-                Resources res = getResources();
-                Toast.makeText(
-                        HuntingActivity.this,
-                        String.format(res.getString(R.string.found_treaures), result.length()), Toast.LENGTH_SHORT)
-                        .show();
-
-            } else {
+            if (result == null) {
                 Toast.makeText(
                         HuntingActivity.this,
                         R.string.no_treaures, Toast.LENGTH_SHORT)
                         .show();
             }
 
-            HuntingActivity.this.isLoading = false;
+            poiData = getPoiInformation(result, MIN_TRESURES);
+
+            callJavaScript("TreasureHuntAR.hunting", new String[]{
+                    poiData
+                            .toString()});
+
+            Resources res = getResources();
+            Toast.makeText(
+                    HuntingActivity.this,
+                    String.format(res.getString(R.string.found_treaures), poiData.length()), Toast.LENGTH_SHORT)
+                    .show();
+
+
+            isLoading = false;
         }
     }
 
@@ -337,12 +352,6 @@ public class HuntingActivity extends AbstractArchitectActivity {
      * @param lon center longitude
      * @return lat/lon values in given position's vicinity
      */
-    private static double[] getRandomLatLonNearby(final double lat,
-                                                  final double lon) {
-        return new double[]{lat + Math.random() / 5 - 0.1,
-                lon + Math.random() / 5 - 0.1};
-    }
-
     private static double[] getRandomLatLonNearby(double lat, double lon,
                                                   int radius) {
         Random random = new Random();

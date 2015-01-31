@@ -54,7 +54,7 @@ var TreasureHuntAR = {
     },
 
     // User tapped and want to hunt a treasure
-    startHunting: function () {
+    startHuntingMagnifier: function () {
         // no magnifier
         if (this.huntingMode || TreasureHuntAR.magnifierInVision == null) {
             return;
@@ -80,10 +80,10 @@ var TreasureHuntAR = {
         TreasureHuntAR.magnifierInVision.geoObject.drawables.addIndicatorDrawable(imageDrawable);
         document.location = "architectsdk://startHuntingMagnifier";
 
-        var actionRange2 = new AR.ActionRange(TreasureHuntAR.magnifierInVision.geoObject.locations[0], this.radius, {
+        var actionRange = new AR.ActionRange(TreasureHuntAR.magnifierInVision.geoObject.locations[0], this.radius, {
             onEnter : function() {
                 document.location = "architectsdk://startHuntingTreasure?id=" + TreasureHuntAR.magnifierInVision.geoData.id;
-                actionRange2.enabled = false; //an ActionArea which can only be entered once
+                actionRange.enabled = false; //an ActionArea which can only be entered once
             }
         });
     },
