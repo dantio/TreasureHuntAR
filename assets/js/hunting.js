@@ -1,17 +1,53 @@
 var TreasureHuntAR = {
+    loaded: false,
     magnifiers: {}, // { id, poiData, geoObject }
     magnifiersGeoObjects: [], // array of geoObject
     magnifierInVision: null,
     magnifierSize: 2,
     huntingMode: false,
     radius: 30, // 30m
+    tracker: null,
+    modelTreasure: null, // 3d treasur model
 
     /**
      * Called in HuntingActivity
-     * @param poiData data from Server
+     * @param poiDataServer data from Server
      */
     hunting: function (poiDataServer) {
+        // Disable all sensors in "IR-only" Worlds to save performance.
+        // If the property is set to true, any geo-related components (such as GeoObjects and ActionRanges) are active.
+        // If the property is set to false, any geo-related components will not be visible on the screen, and triggers will not fire.
+        // AR.context.services.sensors = false;
+
         var poiData = poiDataServer || [];
+
+        this.tracker = new AR.Tracker("target-collections.wtc", {
+            onLoaded: this.loadingStep
+        });
+
+        this.modelTreasure = new AR.Model("treasure.wt3", {
+            onLoaded: this.loadingStep,
+            scale: {
+                x: 0.045,
+                y: 0.045,
+                z: 0.045
+            },
+            translate: {
+                x: 0.0,
+                y: 0.05,
+                z: 0.0
+            },
+            rotate: {
+                roll: -25
+            }
+        });
+
+        // Similar to 2D content the 3D model is added to the drawables.cam property of an AR.Trackable2DObject.
+        var trackable = new AR.Trackable2DObject(this.tracker, "*", {
+            drawables: {
+                cam: [this.modelTreasure]
+            }
+        });
 
         // create geo objects
         for (var i = 0; i < poiData.length; i++) {
@@ -42,8 +78,7 @@ var TreasureHuntAR = {
                         cam: [image, label]
                     },
                     onEnterFieldOfVision: TreasureHuntAR.inVision(poi),
-                    onExitFieldOfVision: TreasureHuntAR.exitVision(poi),
-                    onClick: TreasureHuntAR.startHunting()
+                    onExitFieldOfVision: TreasureHuntAR.exitVision(poi)
                 });
 
             this.magnifiersGeoObjects.push(poi.geoObject);
@@ -51,6 +86,23 @@ var TreasureHuntAR = {
 
         //AR.radar.container = document.getElementById("radarContainer");
         //AR.radar.enabled = true;
+    },
+
+    loadingStep: function loadingStepFn() {
+        if (!TreasureHuntAR.loaded && TreasureHuntAR.tracker.isLoaded() && TreasureHuntAR.modelTreasure.isLoaded()) {
+            TreasureHuntAR.loaded = true;
+            var cssDivLeft = " style='display: table-cell;vertical-align: middle; text-align: right; width: 50%; padding-right: 15px;'";
+            var cssDivRight = " style='display: table-cell;vertical-align: middle; text-align: left;'";
+            document.getElementById('loadingMessage').innerHTML =
+                "<div" + cssDivLeft + ">Scan CarAd Tracker Image:</div>";
+              //+ "<div" + cssDivRight + "><img src='assets/car.png'></img></div>";
+
+            // Remove Scan target message after 10 sec.
+            setTimeout(function() {
+                var e = document.getElementById('loadingMessage');
+                e.parentElement.removeChild(e);
+            }, 10000);
+        }
     },
 
     // User tapped and want to hunt a treasure
