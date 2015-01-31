@@ -97,6 +97,27 @@ app.get('/cache/:id', function (req, res) {
     });
 });
 
+app.get('/area/:lat/:lon/:radius', function (req, res) {
+
+    var latitude = req.params.lat.replace(',', '.');
+    var longitude = req.params.lon.replace(',', '.');
+    var radius = req.params.radius.replace(',', '.');
+
+    var lat_min = latitude - radius;
+    var lat_max = latitude + radius;
+    var lon_min = longitude - radius;
+    var lon_max = longitude + radius;
+
+    db.all('SELECT * FROM location WHERE latitude > '+lat_min+' AND latitude < '+lat_max+' AND longitude > '+lon_min+' AND longitude < '+lon_max, function(err, rows) {
+        if (rows.length == 0) {
+            res.send(STATUS);
+        } else {
+            res.send(rows);
+        }
+    });
+});
+
+
 app.get('/caches', function (req, res) {
     db.all('SELECT * FROM cache', function(err, rows) {
         if (rows.length == 0) {
