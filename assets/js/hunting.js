@@ -20,13 +20,9 @@ var TreasureHuntAR = {
         // AR.context.services.sensors = false;
 
         var poiData = poiDataServer || [];
-
-        this.tracker = new AR.Tracker("target-collections.wtc", {
-            onLoaded: this.loadingStep
-        });
+        var image = new AR.ImageDrawable(new AR.ImageResource('img/magnifier.png'), this.magnifierSize);
 
         this.modelTreasure = new AR.Model("treasure.wt3", {
-            onLoaded: this.loadingStep,
             scale: {
                 x: 0.045,
                 y: 0.045,
@@ -42,13 +38,6 @@ var TreasureHuntAR = {
             }
         });
 
-        // Similar to 2D content the 3D model is added to the drawables.cam property of an AR.Trackable2DObject.
-        var trackable = new AR.Trackable2DObject(this.tracker, "*", {
-            drawables: {
-                cam: [this.modelTreasure]
-            }
-        });
-
         // create geo objects
         for (var i = 0; i < poiData.length; i++) {
             var location = new AR.GeoLocation(
@@ -56,8 +45,7 @@ var TreasureHuntAR = {
                 parseFloat(poiData[i].longitude),
                 parseFloat(poiData[i].altitude));
 
-            var image = new AR.ImageDrawable(new AR.ImageResource(poiData[i].res), this.magnifierSize);
-            var label = new AR.Label("distance",1, {
+            var label = new AR.Label("distance", 1, {
                 offsetY: -this.magnifierSize / 2,
                 verticalAnchor: AR.CONST.VERTICAL_ANCHOR.TOP,
                 opacity: 0.9,
@@ -87,24 +75,6 @@ var TreasureHuntAR = {
         //AR.radar.container = document.getElementById("radarContainer");
         //AR.radar.enabled = true;
     },
-
-    loadingStep: function loadingStepFn() {
-        if (!TreasureHuntAR.loaded && TreasureHuntAR.tracker.isLoaded() && TreasureHuntAR.modelTreasure.isLoaded()) {
-            TreasureHuntAR.loaded = true;
-            var cssDivLeft = " style='display: table-cell;vertical-align: middle; text-align: right; width: 50%; padding-right: 15px;'";
-            var cssDivRight = " style='display: table-cell;vertical-align: middle; text-align: left;'";
-            document.getElementById('loadingMessage').innerHTML =
-                "<div" + cssDivLeft + ">Scan CarAd Tracker Image:</div>";
-              //+ "<div" + cssDivRight + "><img src='assets/car.png'></img></div>";
-
-            // Remove Scan target message after 10 sec.
-            setTimeout(function() {
-                var e = document.getElementById('loadingMessage');
-                e.parentElement.removeChild(e);
-            }, 10000);
-        }
-    },
-
     // User tapped and want to hunt a treasure
     startHuntingMagnifier: function () {
         // no magnifier
@@ -133,11 +103,12 @@ var TreasureHuntAR = {
         document.location = "architectsdk://startHuntingMagnifier";
 
         var actionRange = new AR.ActionRange(TreasureHuntAR.magnifierInVision.geoObject.locations[0], this.radius, {
-            onEnter : function() {
-                document.location = "architectsdk://startHuntingTreasure?id=" + TreasureHuntAR.magnifierInVision.geoData.id;
-                actionRange.enabled = false; //an ActionArea which can only be entered once
+                onEnter: TreasureHuntAR.inActionRange,
+                onExit: TreasureHuntAR.exitActionRange
             }
-        });
+        );
+        // test
+        TreasureHuntAR.inActionRange()();
     },
 
     // User swiped down want to stop
@@ -153,8 +124,6 @@ var TreasureHuntAR = {
 
         TreasureHuntAR.magnifierInVision.geoObject.drawables.removeIndicatorDrawable();
         this.huntingMode = false;
-
-        document.location = "architectsdk://stopHuntingMagnifier";
     },
 
     inVision: function (poi) {
@@ -189,20 +158,58 @@ var TreasureHuntAR = {
     },
 
     showDetails: function (poi) {
-        //var distance = poi.geoObject.locations[0].distanceToUser();
-
         var label = poi.geoObject.drawables.cam[1];
         label.enabled = true;
         label.text = Math.round(poi.geoObject.locations[0].distanceToUser()) + " meter";
-
-        //document.getElementById("name").innerHTML = poi.poiData.name;
-        //document.getElementById("info").setAttribute("class", "infoVisible");
-        //document.getElementById("distance").innerHTML = poi.geoObject.locations[0].distanceToUser();
     },
 
     hideDetails: function (poi) {
         var label = poi.geoObject.drawables.cam[1];
         label.enabled = false;
-        //document.getElementById("info").setAttribute("class", "info");
+    },
+
+    inActionRange: function () {
+        return function () {
+            // Disable all sensors in "IR-only" Worlds to save performance.
+            AR.context.services.sensors = false;
+            document.location = "architectsdk://startHuntingTreasure?id=" + TreasureHuntAR.magnifierInVision.poiData.id;
+            TreasureHuntAR.magnifierInVision.geoObject.enabled = false;
+
+            TreasureHuntAR.tracker = new AR.Tracker(TreasureHuntAR.magnifierInVision.poiData.target, {
+                onLoaded: TreasureHuntAR.loadingStep
+            });
+/*
+            // Similar to 2D content the 3D model is added to the drawables.cam property of an AR.Trackable2DObject.
+            var trackable = new AR.Trackable2DObject(TreasureHuntAR.tracker, "treasure", {
+                drawables: {
+                    cam: [TreasureHuntAR.modelTreasure]
+                }
+            }); */
+        }
+    },
+
+    exitActionRange: function () {
+        return function () {
+            AR.context.services.sensors = true;
+            TreasureHuntAR.magnifierInVision.geoObject.enabled = true;
+            TreasureHuntAR.tracker.enabled = false;
+        }
+    },
+
+    loadingStep: function loadingStepFn() {
+        if (!TreasureHuntAR.loaded && TreasureHuntAR.tracker.isLoaded() && TreasureHuntAR.modelTreasure.isLoaded()) {
+            TreasureHuntAR.loaded = true;
+            var cssDivLeft = " style='display: table-cell;vertical-align: middle; text-align: right; width: 50%; padding-right: 15px;'";
+            var cssDivRight = " style='display: table-cell;vertical-align: middle; text-align: left;'";
+            document.getElementById('loadingMessage').innerHTML =
+                "<div" + cssDivLeft + ">Scan CarAd Tracker Image:</div>";
+            //+ "<div" + cssDivRight + "><img src='assets/car.png'></img></div>";
+
+            // Remove Scan target message after 10 sec.
+            setTimeout(function () {
+                var e = document.getElementById('loadingMessage');
+                e.parentElement.removeChild(e);
+            }, 10000);
+        }
     }
 };

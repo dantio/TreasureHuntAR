@@ -7,6 +7,8 @@
     <string name="hunting_title">Schätze suchen</string>
     <string name="no_treaures">Keine Schätze in der Nähe :(</string>
     <string name="found_treaures">%1d Schätze in der Nähe :)</string>
+    <string name="get_treasure">Schatz wird vorbereitet...</string>
+    <string name="treasure_hunt">Schatzsuche!</string>
 
 
     <string name="main_title_urlLauncher">Launch World via url</string>

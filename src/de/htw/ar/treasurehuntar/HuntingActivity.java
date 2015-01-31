@@ -25,6 +25,7 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 /**
@@ -33,7 +34,10 @@ import java.util.Random;
 public class HuntingActivity extends AbstractArchitectActivity {
 
     protected JSONArray poiData;
-    protected boolean isLoading = false;
+    protected Map<Integer, String> targets = new HashMap<>();
+
+    protected boolean isLoadingCaches = false;
+    protected boolean isLoadingTarget = false;
 
     // Endpoints
     public static final String ALL_CACHES = "http://www.vegapunk.de:9999/caches";
@@ -44,7 +48,7 @@ public class HuntingActivity extends AbstractArchitectActivity {
 
     // User is in magnifier action range and start hunting treasure
     public static final String ACTION_START_HUNTING_TREASURE = "startHuntingTreasure";
-    public static final String ACTION_STOP_HUNTING_TREASURE = "startHuntingTreasure";
+    public static final String ACTION_STOP_HUNTING_TREASURE = "stopHuntingTreasure";
 
     // State
     public boolean isHuntingMagnifier = false;
@@ -79,40 +83,70 @@ public class HuntingActivity extends AbstractArchitectActivity {
 
     private GestureDetector createGestureDetector(Context context) {
         GestureDetector gestureDetector = new GestureDetector(context);
-        //Create a base listener for generic gestures
         gestureDetector.setBaseListener(new GestureDetector.BaseListener() {
             @Override
             public boolean onGesture(Gesture gesture) {
-                if (gesture == Gesture.TAP) {
-                    // do something on tap
-                    Log.i("gesture", "Tap");
-                    callJavaScript("TreasureHuntAR." + ACTION_START_HUNTING_MAGNIFIER);
-                    return true;
-                } else if (gesture == Gesture.SWIPE_DOWN) {
-                    if (isHuntingMagnifier) {
-                        callJavaScript("TreasureHuntAR." + ACTION_STOP_HUNTING_MAGNIFIER);
-                        isHuntingMagnifier = false;
+                switch (gesture) {
+                    case TAP:
+                        if (!isHuntingMagnifier && !isHuntingTreasure) {
+                            Log.i("gesture", "Tap");
+                            callJavaScript("TreasureHuntAR." + ACTION_START_HUNTING_MAGNIFIER);
+                        }
                         return true;
-                    } else if (isHuntingTreasure) {
-                        callJavaScript("TreasureHuntAR." + ACTION_STOP_HUNTING_TREASURE);
-                        isHuntingTreasure = false;
-                        return true;
-                    }
+                    case SWIPE_DOWN:
+                        Log.i("gesture", "Swipe Down");
+                        if (isHuntingMagnifier) {
+                            Log.i("gesture", ACTION_STOP_HUNTING_MAGNIFIER);
+                            callJavaScript("TreasureHuntAR." + ACTION_STOP_HUNTING_MAGNIFIER);
+                            isHuntingMagnifier = false;
+                            return true;
+                        } else if (isHuntingTreasure) {
+                            Log.i("gesture", ACTION_STOP_HUNTING_TREASURE);
+                            callJavaScript("TreasureHuntAR." + ACTION_STOP_HUNTING_TREASURE);
+                            isHuntingTreasure = false;
+                            return true;
+                        } else {
+                            finish();
+                            return false;
+                        }
 
-                    finish();
-                    return false;
-                } else if (gesture == Gesture.SWIPE_RIGHT) {
-                    // TODO select next magnifier
-                    return true;
-                } else if (gesture == Gesture.SWIPE_LEFT) {
-                    // TODO select prev magnifier
-                    return true;
+                    case SWIPE_RIGHT: // TODO select next magnifier
+                        return true;
+
+                    case SWIPE_LEFT: // TODO select prev magnifier
+                        return true;
                 }
+
                 return false;
             }
         });
 
         return gestureDetector;
+    }
+
+    @Override
+    public ArchitectUrlListener getUrlListener() {
+        return new ArchitectUrlListener() {
+            @Override
+            public boolean urlWasInvoked(String uriString) {
+
+                // TODO Uri uri = new Uri("uriString");
+                // starts with "architectsdk://"
+                String action = uriString.substring("architectsdk://".length());
+                if (action.startsWith(ACTION_START_HUNTING_MAGNIFIER)) {
+                    isHuntingMagnifier = true;
+                } else if (action.startsWith(ACTION_START_HUNTING_TREASURE)) {
+                    isHuntingTreasure = true;
+                    String idString = action.substring(
+                            ACTION_START_HUNTING_TREASURE.length() + "?id="
+                                    .length());
+                    int treasureId = Integer.parseInt(idString);
+                    //loadTreasureData(treasureId);
+                }
+
+                return false;
+            }
+        };
     }
 
     /*
@@ -145,33 +179,6 @@ public class HuntingActivity extends AbstractArchitectActivity {
     }
 
     @Override
-    public ArchitectUrlListener getUrlListener() {
-        return new ArchitectUrlListener() {
-            @Override
-            public boolean urlWasInvoked(String uriString) {
-
-                // TODO Uri uri = new Uri("uriString");
-                // starts with "architectsdk://"
-                String action = uriString.substring("architectsdk://".length());
-                if (action.startsWith(ACTION_START_HUNTING_MAGNIFIER)) {
-                    isHuntingMagnifier = true;
-                } else if (action.startsWith(ACTION_START_HUNTING_TREASURE)) {
-                    isHuntingTreasure = true;
-                    String idString = action.substring(
-                            ACTION_START_HUNTING_TREASURE.length() + "?id="
-                                    .length());
-                    int treasureId = Integer.parseInt(idString);
-                    loadTreasureData(treasureId);
-                } else if (action.startsWith(ACTION_STOP_HUNTING_MAGNIFIER)) {
-                    isHuntingMagnifier = false;
-                }
-
-                return false;
-            }
-        };
-    }
-
-    @Override
     public LocationProvider getLocationProvider(
             final LocationListener locationListener) {
         return new LocationProvider(this, locationListener);
@@ -186,22 +193,15 @@ public class HuntingActivity extends AbstractArchitectActivity {
     @Override
     protected void onPostCreate(final Bundle savedInstanceState) {
         super.onPostCreate(savedInstanceState);
-        loadData();
+        loadCache();
+        //loadTreasureData(0);
     }
 
-    protected void loadData() {
-        if (!isLoading) {
+    protected void loadCache() {
+        if (!isLoadingCaches) {
+            Log.i("load", "Load all caches");
             new LoadCaches().execute(ALL_CACHES);
         }
-    }
-
-    /**
-     * Get target image and sound from server
-     *
-     * @param treasureId the treasure id
-     */
-    private void loadTreasureData(int treasureId) {
-        Log.i("load", "treasure sound and image tracking");
     }
 
     /**
@@ -222,23 +222,31 @@ public class HuntingActivity extends AbstractArchitectActivity {
         // ensure these attributes are also used in JavaScript when extracting POI data
         final String ATTR_ID = "id";
         final String ATTR_NAME = "name";
-        final String ATTR_RESOURCE = "res";
         final String ATTR_DESCRIPTION = "description";
         final String ATTR_LATITUDE = "latitude";
         final String ATTR_LONGITUDE = "longitude";
         final String ATTR_ALTITUDE = "altitude";
+        final String TARGET = "target";
 
         if (js != null) {
             for (int i = 0; i < js.length(); i++) {
                 try {
+                    JSONObject obj = js.getJSONObject(i);
+                    String target = obj.getString("target");
+                    // This is important
+                    if (target == null) {
+                        continue;
+                    }
                     final HashMap<String, String> poiInformation = new HashMap<>();
-                    poiInformation.put(ATTR_ID, js.getJSONObject(i).getString("id"));
-                    poiInformation.put(ATTR_NAME, "POI#" + js.getJSONObject(i).getString("id"));
-                    poiInformation.put(ATTR_RESOURCE, "img/magnifier.png"); // Image e. g. (treasure, hint)
-                    poiInformation.put(ATTR_DESCRIPTION, js.getJSONObject(i).getString("description"));
-                    poiInformation.put(ATTR_LATITUDE, js.getJSONObject(i).getString("latitude"));
-                    poiInformation.put(ATTR_LONGITUDE, js.getJSONObject(i).getString("longitude"));
-                    poiInformation.put(ATTR_ALTITUDE, js.getJSONObject(i).getString("altitude"));
+                    poiInformation.put(ATTR_ID, obj.getString("id"));
+                    poiInformation.put(ATTR_NAME, "POI#" + obj.getString("id"));
+                    poiInformation.put(ATTR_DESCRIPTION, obj.getString("description"));
+                    poiInformation.put(ATTR_LATITUDE, obj.getString("latitude"));
+                    poiInformation.put(ATTR_LONGITUDE, obj.getString("longitude"));
+                    poiInformation.put(ATTR_ALTITUDE, obj.getString("altitude"));
+
+                    poiInformation.put(TARGET, target);
+                    targets.put(obj.getInt("id"), target);
 
                     pois.put(new JSONObject(poiInformation));
                 } catch (JSONException e) {
@@ -252,7 +260,6 @@ public class HuntingActivity extends AbstractArchitectActivity {
             final HashMap<String, String> poiInformation = new HashMap<>();
             poiInformation.put(ATTR_ID, String.valueOf(i));
             poiInformation.put(ATTR_NAME, "POI#" + i);
-            poiInformation.put(ATTR_RESOURCE, "img/magnifier.png"); // Image e. g. (treasure, hint)
             poiInformation.put(ATTR_DESCRIPTION, "This is the description of POI#" + i);
 
             double[] poiLocationLatLon = getRandomLatLonNearby(
@@ -262,20 +269,24 @@ public class HuntingActivity extends AbstractArchitectActivity {
             poiInformation.put(ATTR_LATITUDE, String.valueOf(poiLocationLatLon[0]));
             poiInformation.put(ATTR_LONGITUDE, String.valueOf(poiLocationLatLon[1]));
             poiInformation.put(ATTR_ALTITUDE, String.valueOf(UNKNOWN_ALTITUDE));
-
+            poiInformation.put(TARGET, "http://s3-eu-west-1.amazonaws.com/web-api-hosting/jwtc/548d7175160a69d26dc51a7f/20150131/lL6ksyrm/target-collections.wtc");
+            targets.put(i, i + ".wtc");
             pois.put(new JSONObject(poiInformation));
         }
 
         return pois;
     }
 
+    /**
+     * Load nearby caches
+     */
     class LoadCaches extends AsyncTask<String, Void, JSONArray> {
         final int WAIT_FOR_LOCATION_STEP_MS = 5000;
 
         @Override
         protected void onPreExecute() {
 
-            if (isLoading) {
+            if (isLoadingCaches) {
                 Log.i("LoadCaches", "Task already started");
                 cancel(true);
             }
@@ -287,7 +298,7 @@ public class HuntingActivity extends AbstractArchitectActivity {
                         .show();
             }
 
-            isLoading = true;
+            isLoadingCaches = true;
         }
 
         @Override
@@ -346,7 +357,7 @@ public class HuntingActivity extends AbstractArchitectActivity {
                             .toString()});
 
 
-            isLoading = false;
+            isLoadingCaches = false;
         }
     }
 
