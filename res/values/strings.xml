@@ -5,6 +5,9 @@
 
     <string name="caching_title">Schätze verstecken</string>
     <string name="hunting_title">Schätze suchen</string>
+    <string name="no_treaures">Keine Schätze in der Nähe :(</string>
+    <string name="found_treaures">%1d Schätze in der Nähe :)</string>
+
 
     <string name="main_title_urlLauncher">Launch World via url</string>
     <string name="compass_accuracy_low">Please re-calibrate compass by waving your device in a figure 8 motion.</string>

@@ -1,9 +1,10 @@
 package de.htw.ar.treasurehuntar;
 
 import android.content.Context;
+import android.content.res.Resources;
 import android.hardware.SensorManager;
-import android.location.Location;
 import android.location.LocationListener;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -12,9 +13,17 @@ import com.google.android.glass.touchpad.Gesture;
 import com.google.android.glass.touchpad.GestureDetector;
 import com.wikitude.architect.ArchitectView.ArchitectUrlListener;
 import com.wikitude.architect.ArchitectView.SensorAccuracyChangeListener;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Random;
 
@@ -99,10 +108,7 @@ public class HuntingActivity extends AbstractArchitectActivity {
      */
     @Override
     public boolean onGenericMotionEvent(MotionEvent event) {
-        if (mGestureDetector != null) {
-            return mGestureDetector.onMotionEvent(event);
-        }
-        return false;
+        return mGestureDetector != null && mGestureDetector.onMotionEvent(event);
     }
 
     @Override
@@ -164,55 +170,6 @@ public class HuntingActivity extends AbstractArchitectActivity {
         return MAX_RADIUS;
     }
 
-    final Runnable loadData = new Runnable() {
-
-        @Override
-        public void run() {
-
-            HuntingActivity.this.isLoading = true;
-
-            final int WAIT_FOR_LOCATION_STEP_MS = 5000;
-
-            while (
-                    HuntingActivity.this.lastKnownLocation == null
-                            && !HuntingActivity.this.isFinishing()) {
-
-                HuntingActivity.this
-                        .runOnUiThread(new Runnable() {
-
-                            @Override
-                            public void run() {
-                                Toast.makeText(
-                                        HuntingActivity.this,
-                                        R.string.location_fetching, Toast.LENGTH_SHORT)
-                                        .show();
-                            }
-                        });
-
-                try {
-                    Thread.sleep(WAIT_FOR_LOCATION_STEP_MS);
-                } catch (InterruptedException e) {
-                    break;
-                }
-            }
-
-            if (HuntingActivity.this.lastKnownLocation != null
-                    && !HuntingActivity.this.isFinishing()) {
-                // TODO: you may replace this dummy implementation and instead load POI information e.g. from your database
-                HuntingActivity.this.poiData = HuntingActivity
-                        .getPoiInformation(
-                                HuntingActivity.this.lastKnownLocation,
-                                MAX_TRESURES);
-
-                HuntingActivity.this
-                        .callJavaScript("TreasureHuntAR.hunting", new String[]{
-                                HuntingActivity.this.poiData
-                                        .toString()});
-            }
-
-            HuntingActivity.this.isLoading = false;
-        }
-    };
 
     @Override
     protected void onPostCreate(final Bundle savedInstanceState) {
@@ -222,8 +179,7 @@ public class HuntingActivity extends AbstractArchitectActivity {
 
     protected void loadData() {
         if (!isLoading) {
-            final Thread t = new Thread(loadData);
-            t.start();
+            new LoadCaches().execute("http://www.vegapunk.de:9999/caches");
         }
     }
 
@@ -239,16 +195,9 @@ public class HuntingActivity extends AbstractArchitectActivity {
     /**
      * loads poiInformation and returns them as JSONArray. Ensure attributeNames of JSON POIs are well known in JavaScript, so you can parse them easily
      *
-     * @param userLocation   the location of the user
-     * @param numberOfPlaces number of places to load (at max)
      * @return POI information in JSONArray
      */
-    public static JSONArray getPoiInformation(final Location userLocation,
-                                              final int numberOfPlaces) {
-
-        if (userLocation == null) {
-            return null;
-        }
+    public JSONArray getPoiInformation(final JSONArray js) {
 
         final JSONArray pois = new JSONArray();
 
@@ -261,17 +210,16 @@ public class HuntingActivity extends AbstractArchitectActivity {
         final String ATTR_LONGITUDE = "longitude";
         final String ATTR_ALTITUDE = "altitude";
 
-        getCaches gC = new getCaches();
-
-        JSONArray js = new JSONArray();
-        js = gC.execute("http://www.vegapunk.de:9999/caches").get();
         //get example
         //[{"id":1,"description":"bla bla bla","picture":"bild.jpg","latitude":34.43443,"longitude":43.54355,"altitude":43.545,"target":"http://s3-eu-west-1.amazonaws.com/web-api-hosting/jwtc/54afd1bccb34cdd16d3f67f6/20150131/JOs5iFUz/target-collections.wtc"}]
 
-            for(int i = 0; i < js.length(); i++){
+        for (int i = 0; i < js.length(); i++) {
+
+            try {
                 final HashMap<String, String> poiInformation = new HashMap<>();
                 // Id
                 poiInformation.put(ATTR_ID, js.getJSONObject(i).getString("id"));
+
                 // Name
                 poiInformation.put(ATTR_NAME, "POI#" + js.getJSONObject(i).getString("id"));
                 // Image e. g. (treasure, hint)
@@ -287,32 +235,100 @@ public class HuntingActivity extends AbstractArchitectActivity {
                 poiInformation.put(ATTR_ALTITUDE, js.getJSONObject(i).getString("altitude"));
 
                 pois.put(new JSONObject(poiInformation));
+            } catch (JSONException e) {
+                e.printStackTrace();
             }
+        }
 
         return pois;
     }
 
-        class getCaches extends AsyncTask<String, Void, JSONArray> {
-            @Override
-            protected JSONArray doInBackground(String... urls) {
+    class LoadCaches extends AsyncTask<String, Void, JSONArray> {
+        final int WAIT_FOR_LOCATION_STEP_MS = 5000;
+
+        @Override
+        protected void onPreExecute() {
+
+            if (HuntingActivity.this.isLoading) {
+                Log.i("LoadCaches", "Task already started");
+                cancel(true);
+            }
+
+            if (HuntingActivity.this.lastKnownLocation == null
+                    && !HuntingActivity.this.isFinishing()) {
+                Toast.makeText(
+                        HuntingActivity.this,
+                        R.string.location_fetching, Toast.LENGTH_SHORT)
+                        .show();
+            }
+
+            HuntingActivity.this.isLoading = true;
+        }
+
+        @Override
+        protected JSONArray doInBackground(String... urls) {
+
+            // wait till we have good location
+            while (
+                    HuntingActivity.this.lastKnownLocation == null
+                            && !HuntingActivity.this.isFinishing()) {
                 try {
-                    HttpGet httppost = new HttpGet(urls[0]);
-                    HttpClient httpclient = new DefaultHttpClient();
-                    HttpResponse response = httpclient.execute(httppost);
-                    int status = response.getStatusLine().getStatusCode();
-                    if (status == 200) {
-                        HttpEntity entity = response.getEntity();
-                        String data = EntityUtils.toString(entity);
-                        return new JSONArray(data);
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }catch (JSONException e) {
+                    Thread.sleep(WAIT_FOR_LOCATION_STEP_MS);
+                } catch (InterruptedException e) {
+                    cancel(true);
+                    return null;
+                }
+            }
+
+            try {
+                HttpGet httpGet = new HttpGet(urls[0]);
+                HttpClient httpclient = new DefaultHttpClient();
+                HttpResponse response = httpclient.execute(httpGet);
+                int status = response.getStatusLine().getStatusCode();
+
+                if (status == 200) {
+                    HttpEntity entity = response.getEntity();
+                    String data = EntityUtils.toString(entity);
+                    return new JSONArray(data);
+                }
+
+            } catch (IOException | JSONException ex) {
+                ex.printStackTrace();
+            }
+
+            return null;
+        }
+
+        protected void onPostExecute(JSONArray result) {
+            if (result != null) {
+                try {
+                    HuntingActivity.this.poiData = new JSONArray(result);
+                } catch (JSONException e) {
                     e.printStackTrace();
                 }
-                return null;
+
+                HuntingActivity.this.poiData = getPoiInformation(result);
+                HuntingActivity.this
+                        .callJavaScript("TreasureHuntAR.hunting", new String[]{
+                                HuntingActivity.this.poiData
+                                        .toString()});
+
+                Resources res = getResources();
+                Toast.makeText(
+                        HuntingActivity.this,
+                        String.format(res.getString(R.string.found_treaures), result.length()), Toast.LENGTH_SHORT)
+                        .show();
+
+            } else {
+                Toast.makeText(
+                        HuntingActivity.this,
+                        R.string.no_treaures, Toast.LENGTH_SHORT)
+                        .show();
             }
+
+            HuntingActivity.this.isLoading = false;
         }
+    }
 
     /**
      * helper for creation of dummy places.
