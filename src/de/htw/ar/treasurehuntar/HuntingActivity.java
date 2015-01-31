@@ -35,6 +35,9 @@ public class HuntingActivity extends AbstractArchitectActivity {
     protected JSONArray poiData;
     protected boolean isLoading = false;
 
+    // Endpoints
+    public static final String ALL_CACHES = "http://www.vegapunk.de:9999/caches";
+
     // User go for magnifier
     public static final String ACTION_START_HUNTING_MAGNIFIER = "startHuntingMagnifier";
     public static final String ACTION_STOP_HUNTING_MAGNIFIER = "stopHuntingMagnifier";
@@ -88,8 +91,11 @@ public class HuntingActivity extends AbstractArchitectActivity {
                 } else if (gesture == Gesture.SWIPE_DOWN) {
                     if (isHuntingMagnifier) {
                         callJavaScript("TreasureHuntAR." + ACTION_STOP_HUNTING_MAGNIFIER);
+                        isHuntingMagnifier = false;
                         return true;
                     } else if (isHuntingTreasure) {
+                        callJavaScript("TreasureHuntAR." + ACTION_STOP_HUNTING_TREASURE);
+                        isHuntingTreasure = false;
                         return true;
                     }
 
@@ -185,14 +191,14 @@ public class HuntingActivity extends AbstractArchitectActivity {
 
     protected void loadData() {
         if (!isLoading) {
-            new LoadCaches().execute("http://www.vegapunk.de:9999/caches");
+            new LoadCaches().execute(ALL_CACHES);
         }
     }
 
     /**
      * Get target image and sound from server
      *
-     * @param treasureId
+     * @param treasureId the treasure id
      */
     private void loadTreasureData(int treasureId) {
         Log.i("load", "treasure sound and image tracking");
@@ -326,19 +332,18 @@ public class HuntingActivity extends AbstractArchitectActivity {
                         HuntingActivity.this,
                         R.string.no_treaures, Toast.LENGTH_SHORT)
                         .show();
+            } else {
+                Resources res = getResources();
+                Toast.makeText(
+                        HuntingActivity.this,
+                        String.format(res.getString(R.string.found_treaures), result.length()), Toast.LENGTH_SHORT)
+                        .show();
             }
 
             poiData = getPoiInformation(result, MIN_TRESURES);
-
             callJavaScript("TreasureHuntAR.hunting", new String[]{
                     poiData
                             .toString()});
-
-            Resources res = getResources();
-            Toast.makeText(
-                    HuntingActivity.this,
-                    String.format(res.getString(R.string.found_treaures), poiData.length()), Toast.LENGTH_SHORT)
-                    .show();
 
 
             isLoading = false;
@@ -352,8 +357,7 @@ public class HuntingActivity extends AbstractArchitectActivity {
      * @param lon center longitude
      * @return lat/lon values in given position's vicinity
      */
-    private static double[] getRandomLatLonNearby(double lat, double lon,
-                                                  int radius) {
+    private static double[] getRandomLatLonNearby(double lat, double lon, int radius) {
         Random random = new Random();
 
         // Convert radius from meters to degrees
