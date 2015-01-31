@@ -108,7 +108,7 @@ app.get('/area/:lat/:lon/:radius', function (req, res) {
     var lon_min = longitude - radius;
     var lon_max = longitude + radius;
 
-    db.all('SELECT * FROM location WHERE latitude > '+lat_min+' AND latitude < '+lat_max+' AND longitude > '+lon_min+' AND longitude < '+lon_max, function(err, rows) {
+    db.all('SELECT * FROM cache WHERE latitude > '+lat_min+' AND latitude < '+lat_max+' AND longitude > '+lon_min+' AND longitude < '+lon_max, function(err, rows) {
         if (rows.length == 0) {
             res.send(STATUS);
         } else {
