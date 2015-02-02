@@ -239,7 +239,7 @@ public class CachingActivity extends AbstractArchitectActivity {
 
         try {
             // Add your data
-            List<NameValuePair> nameValuePairs = new ArrayList<>(2);
+            List<NameValuePair> nameValuePairs = new ArrayList<>();
             Calendar c = Calendar.getInstance();
             int date = c.get(Calendar.DATE);
 
@@ -258,6 +258,7 @@ public class CachingActivity extends AbstractArchitectActivity {
 
             // Execute HTTP Post Request
             HttpResponse response = httpclient.execute(httppost);
+            Log.i("responso", response.toString());
             return response;
         } catch (IOException ex) {
             ex.printStackTrace();
