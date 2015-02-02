@@ -39,6 +39,10 @@ import java.util.List;
  */
 public class CachingActivity extends AbstractArchitectActivity {
 
+    // take picture logic
+    private static final int TAKE_PICTURE_REQUEST = 1;
+
+    private final static String POST_IMAGE_URL = "http://vegapunk.de:9999/cache64";
     /**
      * extras key for activity title, usually static and set in Manifest.xml
      */
@@ -53,7 +57,7 @@ public class CachingActivity extends AbstractArchitectActivity {
      * last time the calibration toast was shown, this avoids too many toast shown when compass needs calibration
      */
     private long lastCalibrationToastShownTimeMillis = System
-        .currentTimeMillis();
+            .currentTimeMillis();
 
     private GestureDetector mGestureDetector;
 
@@ -66,15 +70,15 @@ public class CachingActivity extends AbstractArchitectActivity {
     @Override
     public String getARchitectWorldPath() {
         return getIntent().getExtras().getString(
-            EXTRAS_KEY_ACTIVITY_ARCHITECT_WORLD_URL);
+                EXTRAS_KEY_ACTIVITY_ARCHITECT_WORLD_URL);
     }
 
     @Override
     public String getActivityTitle() {
         return (getIntent().getExtras() != null && getIntent().getExtras().get(
-            EXTRAS_KEY_ACTIVITY_TITLE_STRING) != null) ? getIntent()
-            .getExtras().getString(EXTRAS_KEY_ACTIVITY_TITLE_STRING)
-            : "Test-World";
+                EXTRAS_KEY_ACTIVITY_TITLE_STRING) != null) ? getIntent()
+                .getExtras().getString(EXTRAS_KEY_ACTIVITY_TITLE_STRING)
+                : "Test-World";
     }
 
     @Override
@@ -94,15 +98,15 @@ public class CachingActivity extends AbstractArchitectActivity {
             public void onCompassAccuracyChanged(int accuracy) {
                 /* UNRELIABLE = 0, LOW = 1, MEDIUM = 2, HIGH = 3 */
                 if (accuracy < SensorManager.SENSOR_STATUS_ACCURACY_MEDIUM
-                    && CachingActivity.this != null && !CachingActivity.this
-                    .isFinishing() && System.currentTimeMillis()
-                    - CachingActivity.this.lastCalibrationToastShownTimeMillis
-                    > 5 * 1000) {
+                        && CachingActivity.this != null && !CachingActivity.this
+                        .isFinishing() && System.currentTimeMillis()
+                        - CachingActivity.this.lastCalibrationToastShownTimeMillis
+                        > 5 * 1000) {
                     Toast.makeText(CachingActivity.this,
-                        R.string.compass_accuracy_low, Toast.LENGTH_LONG)
-                        .show();
+                            R.string.compass_accuracy_low, Toast.LENGTH_LONG)
+                            .show();
                     CachingActivity.this.lastCalibrationToastShownTimeMillis = System
-                        .currentTimeMillis();
+                            .currentTimeMillis();
                 }
             }
         };
@@ -122,7 +126,7 @@ public class CachingActivity extends AbstractArchitectActivity {
 
     @Override
     public LocationProvider getLocationProvider(
-        final LocationListener locationListener) {
+            final LocationListener locationListener) {
         return new LocationProvider(this, locationListener);
     }
 
@@ -141,7 +145,8 @@ public class CachingActivity extends AbstractArchitectActivity {
                 if (gesture == Gesture.TAP) {
                     // do something on tap
                     Log.i("gesture", "Tap");
-                    takePicture();
+                    Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                    startActivityForResult(intent, TAKE_PICTURE_REQUEST);
                     return true;
                 }
                 return false;
@@ -151,9 +156,11 @@ public class CachingActivity extends AbstractArchitectActivity {
         return gestureDetector;
     }
 
-    /*
- * Send generic motion events to the gesture detector
- */
+    /**
+     * Send generic motion events to the gesture detector
+     * @param event
+     * @return
+     */
     @Override
     public boolean onGenericMotionEvent(MotionEvent event) {
         if (mGestureDetector != null) {
@@ -161,13 +168,7 @@ public class CachingActivity extends AbstractArchitectActivity {
         }
         return false;
     }
-    // take picture logic
-    private static final int TAKE_PICTURE_REQUEST = 1;
 
-    private void takePicture() {
-        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        startActivityForResult(intent, TAKE_PICTURE_REQUEST);
-    }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -234,7 +235,7 @@ public class CachingActivity extends AbstractArchitectActivity {
     private HttpResponse sendPostRequest(File fileToSend) {
         // Create a new HttpClient and Post Header
         HttpClient httpclient = new DefaultHttpClient();
-        HttpPost httppost = new HttpPost("http://vegapunk.de:9999/test");
+        HttpPost httppost = new HttpPost(POST_IMAGE_URL);
 
         try {
             // Add your data
@@ -244,24 +245,22 @@ public class CachingActivity extends AbstractArchitectActivity {
 
             Bitmap bitmap = BitmapFactory.decodeFile(fileToSend.getPath());
             ByteArrayOutputStream stream = new ByteArrayOutputStream();
-            bitmap.compress(Bitmap.CompressFormat.PNG, 90, stream); //compress to which format you want.
-            byte [] byte_arr = stream.toByteArray();
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 90, stream); //compress to which format you want.
+            byte[] byte_arr = stream.toByteArray();
             String image_str = Base64.encodeToString(byte_arr, Base64.DEFAULT);
 
-            nameValuePairs.add(new BasicNameValuePair("description", "Treasure-"+date));
-            nameValuePairs.add(new BasicNameValuePair("latitude", "30"));
-            nameValuePairs.add(new BasicNameValuePair("longitude", "30"));
-            nameValuePairs.add(new BasicNameValuePair("altitude", "30"));
+            nameValuePairs.add(new BasicNameValuePair("description", "Treasure-" + date));
+            nameValuePairs.add(new BasicNameValuePair("latitude", String.valueOf(lastKnownLocation.getLatitude())));
+            nameValuePairs.add(new BasicNameValuePair("longitude", String.valueOf(lastKnownLocation.getLongitude())));
+            nameValuePairs.add(new BasicNameValuePair("altitude", String.valueOf(lastKnownLocation.getAltitude())));
             nameValuePairs.add(new BasicNameValuePair("file", image_str));
             httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
 
             // Execute HTTP Post Request
-             HttpResponse response = httpclient.execute(httppost);
+            HttpResponse response = httpclient.execute(httppost);
             return response;
-        } catch (ClientProtocolException e) {
-            // TODO Auto-generated catch block
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
+        } catch (IOException ex) {
+            ex.printStackTrace();
         }
         return null;
     }
