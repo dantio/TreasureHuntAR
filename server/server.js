@@ -83,7 +83,7 @@ app.post('/cache64', function (req, res) {
                     var q = db.prepare('INSERT INTO cache (description, picture, latitude, longitude, altitude) VALUES ("' + description + '","' + picture + '.jpg",' + latitude + ',' + longitude + ',' + altitude + ')');
                         q.run(function(err){
                             if (err) throw err;
-                            computeTargetImage(this.lastID, picture, function (state) {
+                            computeTargetImage(this.lastID, picture+".jpg", function (state) {
                                 res.send(200).send("Cool");
                             });
 
