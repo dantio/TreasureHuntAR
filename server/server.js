@@ -39,6 +39,7 @@ var computeTargetImage = function (id, picture, callback) {
     API.convert(IMAGE, function (err, url) {
         if (err) {
             console.log("Error: " + err);
+            callback(false);
         } else {
             var q = db.prepare('UPDATE cache SET target = "' + url + '" WHERE id = ' + id);
             q.run(function(err){
@@ -84,9 +85,12 @@ app.post('/cache64', function (req, res) {
                         q.run(function(err){
                             if (err) throw err;
                             computeTargetImage(this.lastID, picture+".jpg", function (state) {
-                                res.send(200).send("Cool");
+                                if(state){
+                                    res.send(200).send("Cool");
+                                }else{
+                                    res.send(404).send("Nope");
+                                }
                             });
-
                         });
                 }
     });

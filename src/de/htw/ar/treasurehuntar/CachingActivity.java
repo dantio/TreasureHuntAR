@@ -175,9 +175,20 @@ public class CachingActivity extends AbstractArchitectActivity {
             String thumbnailPath = data.getStringExtra(Intents.EXTRA_THUMBNAIL_FILE_PATH);
             String picturePath = data.getStringExtra(Intents.EXTRA_PICTURE_FILE_PATH);
 
-            processPictureWhenReady(picturePath);
+            //processPictureWhenReady(picturePath);
             // TODO: Show the thumbnail to the user while the full picture is being
             // processed.
+
+            sendCache sC = new sendCache();
+            //hier noch das bitmap mitschicken und in doInBackground einbinden
+            try {
+                sC.execute("http://vegapunk.de:9999/cache64").get();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+            }
+
         }
 
         super.onActivityResult(requestCode, resultCode, data);
@@ -265,4 +276,43 @@ public class CachingActivity extends AbstractArchitectActivity {
         }
         return null;
     }
+
+    class sendCache extends AsyncTask<String, Void, Void> {
+        @Override
+        protected Void doInBackground(String... urls) {
+
+            HttpClient httpclient = new DefaultHttpClient();
+            HttpPost httppost = new HttpPost(urls[0]);
+            try {
+                //ambesten hier ein bitmap übergeben einen pfad oder sowas
+                Drawable myDrawable = getResources().getDrawable(R.drawable.logo); //achtung das muss geändert werden == R.drawable.logo
+                Bitmap myLogo = ((BitmapDrawable) myDrawable).getBitmap();
+
+                List<NameValuePair> nameValuePairs = new ArrayList<>(2);
+                ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                myLogo.compress(Bitmap.CompressFormat.PNG, 90, stream);
+                byte [] byte_arr = stream.toByteArray();
+                String image_str = Base64.encodeToString(byte_arr, Base64.DEFAULT);
+
+                nameValuePairs.add(new BasicNameValuePair("description", "Treasure-"));
+                nameValuePairs.add(new BasicNameValuePair("latitude", "30"));
+                nameValuePairs.add(new BasicNameValuePair("longitude", "30"));
+                nameValuePairs.add(new BasicNameValuePair("altitude", "30"));
+                nameValuePairs.add(new BasicNameValuePair("file", image_str));
+                httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
+
+                // Execute HTTP Post Request
+                HttpResponse response = httpclient.execute(httppost);
+                //HttpEntity entity = response.getEntity();
+                //String data = EntityUtils.toString(entity);
+                //return new JSONArray(data);
+            } catch (ClientProtocolException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
+    }
+
 }
