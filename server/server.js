@@ -65,12 +65,8 @@ var hash = function(len)
 
 app.post('/cache64', function (req, res) {
 
-    fs.readFile(req.files.thumbnail.path, function (err, data) {
-        if (err) {
-            res.send(404).send("Nope");
-        } else {
-            var newPath = __dirname + "/uploads/" + req.files.thumbnail.originalname;
-            fs.writeFile(newPath, data, function (err) {
+            var picture = hash(32).toString();
+            fs.writeFile(__dirname + "/uploads/" +picture+".jpg", new Buffer(req.body.file, "base64"), function(err) {
 
                 if (err) {
                     fs.unlinkSync(newPath);
@@ -78,15 +74,12 @@ app.post('/cache64', function (req, res) {
                 } else {
 
                     var description = req.body.description.toString();
-                    var picture = hash(32).toString();
+
                     var latitude = req.body.latitude.replace(',', '.');
                     var longitude = req.body.longitude.replace(',', '.');
                     var altitude = req.body.altitude.replace(',', '.');
 
-                    fs.writeFile(__dirname + "/uploads/" +picture+".jpg", new Buffer(req.body.file, "base64"), function(err) {
-                        if (err) throw err;
-
-                        var q = db.prepare('INSERT INTO cache (description, picture, latitude, longitude, altitude) VALUES ("' + description + '","' + picture + '.jpg",' + latitude + ',' + longitude + ',' + altitude + ')');
+                    var q = db.prepare('INSERT INTO cache (description, picture, latitude, longitude, altitude) VALUES ("' + description + '","' + picture + '.jpg",' + latitude + ',' + longitude + ',' + altitude + ')');
                         q.run(function(err){
                             if (err) throw err;
                             computeTargetImage(this.lastID, picture, function (state) {
@@ -94,10 +87,7 @@ app.post('/cache64', function (req, res) {
                             });
 
                         });
-                    });
                 }
-            });
-        }
     });
 });
 
