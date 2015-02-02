@@ -66,7 +66,8 @@ var hash = function(len)
 app.post('/cache64', function (req, res) {
 
             var picture = hash(32).toString();
-            fs.writeFile(__dirname + "/uploads/" +picture+".jpg", new Buffer(req.body.file, "base64"), function(err) {
+            var newPath = __dirname + "/uploads/" +picture+".jpg";
+            fs.writeFile(newPath, new Buffer(req.body.file, "base64"), function(err) {
 
                 if (err) {
                     fs.unlinkSync(newPath);
