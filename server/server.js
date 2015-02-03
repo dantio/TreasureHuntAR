@@ -1,13 +1,13 @@
 var express = require('express'), // REST-App
     app = express(),
     bodyParser = require('body-parser'),
-    multer = require('multer')
+    multer = require('multer'),
     fs = require('fs'),
     TargetsAPI = require("./TargetsAPI.js"),
     sqlite3 = require('sqlite3').verbose(),
     db = new  sqlite3.Database('treasureHuntAR.db');
 
-var API_TOKEN = "76ee34c7c86c7680771fdef4b93ffade",
+var API_TOKEN = "8baa3a2cac6df74b3a0154a062b8b1e5",
     API_VERSION = 2,
     LIMIT = 1000000000;
 
@@ -38,6 +38,7 @@ var server = app.listen(9999, function () {
 });
 var computeTargetImage = function (id, picture, callback) {
     var IMAGE = IMAGE_URL + "" +picture;
+    console.log(IMAGE);
     API.convert(IMAGE, function (err, url) {
         if (err) {
             console.log("Error: " + err);
@@ -89,7 +90,9 @@ app.post('/cache64', function (req, res) {
                             computeTargetImage(this.lastID, picture+".jpg", function (state) {
                                 if(state){
                                     //res.send(200).send("Cool");
+                                    res.send("ok");
                                 }else{
+                                    res.send("nope");
                                     //res.send(404).send("Nope");
                                 }
                             });
@@ -103,18 +106,19 @@ app.post('/cache', function (req, res) {
 
     fs.readFile(req.files.thumbnail.path, function (err, data) {
         if (err) {
-            res.send(404).send("Nope");
+            //res.send(404).send("Nope");
         } else {
             var newPath = __dirname + "/uploads/" + req.files.thumbnail.originalname;
             fs.writeFile(newPath, data, function (err) {
 
                 if (err) {
                     fs.unlinkSync(newPath);
-                    res.send(404).send("Nope");
+                    //res.send(404).send("Nope");
                 } else {
 
                     var description = req.body.description.toString();
                     var picture = req.files.thumbnail.originalname.toString();
+                    console.log(picture);
                     var latitude = req.body.latitude.replace(',', '.');
                     var longitude = req.body.longitude.replace(',', '.');
                     var altitude = req.body.altitude.replace(',', '.');
@@ -123,7 +127,13 @@ app.post('/cache', function (req, res) {
                     q.run(function(err){
                         if (err) throw err;
                         computeTargetImage(this.lastID, picture, function (state) {
-                            res.send(200).send("Cool");
+                            if(state){
+                                //res.send(200).send("Cool");
+                                res.send("ok");
+                            }else{
+                                res.send("nope");
+                                //res.send(404).send("Nope");
+                            }
                         });
 
                     });
