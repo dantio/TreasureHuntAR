@@ -75,13 +75,16 @@ app.post('/cache64', function (req, res) {
                     res.send(404).send("Nope");
                 } else {
 
-                    var description = req.body.description.toString();
+                    TargetsAPI.convert([newPath], function(response){
+                        console.log(response);
+                        var description = req.body.description.toString();
 
-                    var latitude = req.body.latitude.replace(',', '.');
-                    var longitude = req.body.longitude.replace(',', '.');
-                    var altitude = req.body.altitude.replace(',', '.');
+                        var latitude = req.body.latitude.replace(',', '.');
+                        var longitude = req.body.longitude.replace(',', '.');
+                        var altitude = req.body.altitude.replace(',', '.');
+                        var target = "target.wtc";
 
-                    var q = db.prepare('INSERT INTO cache (description, picture, latitude, longitude, altitude) VALUES ("' + description + '","' + picture + '.jpg",' + latitude + ',' + longitude + ',' + altitude + ')');
+                        var q = db.prepare('INSERT INTO cache (description, picture, target,  latitude, longitude, altitude) VALUES ("' + description + '","' + picture + '.jpg",' + target + ', '+ latitude + ',' + longitude + ',' + altitude + ')');
                         q.run(function(err){
                             if (err) throw err;
                             computeTargetImage(this.lastID, picture+".jpg", function (state) {
@@ -92,6 +95,9 @@ app.post('/cache64', function (req, res) {
                                 }
                             });
                         });
+
+                    });
+
                 }
     });
 });

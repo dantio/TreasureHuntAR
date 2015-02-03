@@ -6,8 +6,8 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.hardware.SensorManager;
 import android.location.LocationListener;
+import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.FileObserver;
 import android.provider.MediaStore;
 import android.util.Base64;
 import android.util.Log;
@@ -31,7 +31,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.List;
 
 /**
@@ -42,7 +41,8 @@ public class CachingActivity extends AbstractArchitectActivity {
     // take picture logic
     private static final int TAKE_PICTURE_REQUEST = 1;
 
-    private final static String POST_IMAGE_URL = "http://vegapunk.de:9999/cache64";
+   // private final static String POST_IMAGE_URL = "http://vegapunk.de:9999/cache64";
+    private final static String POST_IMAGE_URL = "http://192.168.0.75:9999/cache64";
     /**
      * extras key for activity title, usually static and set in Manifest.xml
      */
@@ -143,10 +143,8 @@ public class CachingActivity extends AbstractArchitectActivity {
             @Override
             public boolean onGesture(Gesture gesture) {
                 if (gesture == Gesture.TAP) {
-                    // do something on tap
                     Log.i("gesture", "Tap");
-                    Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-                    startActivityForResult(intent, TAKE_PICTURE_REQUEST);
+                    takePicture();
                     return true;
                 }
                 return false;
@@ -156,148 +154,80 @@ public class CachingActivity extends AbstractArchitectActivity {
         return gestureDetector;
     }
 
+    private void takePicture() {
+        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        startActivityForResult(intent, TAKE_PICTURE_REQUEST);
+    }
+
     /**
      * Send generic motion events to the gesture detector
+     *
      * @param event
      * @return
      */
     @Override
     public boolean onGenericMotionEvent(MotionEvent event) {
-        if (mGestureDetector != null) {
-            return mGestureDetector.onMotionEvent(event);
-        }
-        return false;
+        return mGestureDetector != null && mGestureDetector.onMotionEvent(event);
     }
 
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == TAKE_PICTURE_REQUEST && resultCode == RESULT_OK) {
-            String thumbnailPath = data.getStringExtra(Intents.EXTRA_THUMBNAIL_FILE_PATH);
             String picturePath = data.getStringExtra(Intents.EXTRA_PICTURE_FILE_PATH);
 
-            //processPictureWhenReady(picturePath);
-            // TODO: Show the thumbnail to the user while the full picture is being
-            // processed.
-
-            sendCache sC = new sendCache();
-            //hier noch das bitmap mitschicken und in doInBackground einbinden
-            try {
-                sC.execute("http://vegapunk.de:9999/cache64").get();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            } catch (ExecutionException e) {
-                e.printStackTrace();
-            }
-
+            SendCache sC = new SendCache(picturePath);
+            sC.execute(POST_IMAGE_URL);
         }
 
         super.onActivityResult(requestCode, resultCode, data);
     }
 
-    private void processPictureWhenReady(final String picturePath) {
-        final File pictureFile = new File(picturePath);
 
-        if (pictureFile.exists()) {
-            // The picture is ready; process it.
-            //http://vegapunk.de:9999/cache
-            sendPostRequest(pictureFile);
+    /**
+     * Send picture to server
+     */
+    class SendCache extends AsyncTask<String, Void, Void> {
 
-        } else {
-            // The file does not exist yet. Before starting the file observer, you
-            // can update your UI to let the user know that the application is
-            // waiting for the picture (for example, by displaying the thumbnail
-            // image and a progress indicator).
+        private final String picturePath;
 
-            final File parentDirectory = pictureFile.getParentFile();
-            FileObserver observer = new FileObserver(parentDirectory.getPath(),
-                    FileObserver.CLOSE_WRITE | FileObserver.MOVED_TO) {
-                // Protect against additional pending events after CLOSE_WRITE
-                // or MOVED_TO is handled.
-                private boolean isFileWritten;
-
-                @Override
-                public void onEvent(int event, String path) {
-                    if (!isFileWritten) {
-                        // For safety, make sure that the file that was created in
-                        // the directory is actually the one that we're expecting.
-                        File affectedFile = new File(parentDirectory, path);
-                        isFileWritten = affectedFile.equals(pictureFile);
-
-                        if (isFileWritten) {
-                            stopWatching();
-
-                            // Now that the file is ready, recursively call
-                            // processPictureWhenReady again (on the UI thread).
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    processPictureWhenReady(picturePath);
-                                }
-                            });
-                        }
-                    }
-                }
-            };
-            observer.startWatching();
+        SendCache(String picturePath) {
+            this.picturePath = picturePath;
         }
-    }
 
-    private HttpResponse sendPostRequest(File fileToSend) {
-        // Create a new HttpClient and Post Header
-        HttpClient httpclient = new DefaultHttpClient();
-        HttpPost httppost = new HttpPost(POST_IMAGE_URL);
-
-        try {
-            // Add your data
-            List<NameValuePair> nameValuePairs = new ArrayList<>();
-            Calendar c = Calendar.getInstance();
-            int date = c.get(Calendar.DATE);
-
-            Bitmap bitmap = BitmapFactory.decodeFile(fileToSend.getPath());
-            ByteArrayOutputStream stream = new ByteArrayOutputStream();
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 90, stream); //compress to which format you want.
-            byte[] byte_arr = stream.toByteArray();
-            String image_str = Base64.encodeToString(byte_arr, Base64.DEFAULT);
-
-            nameValuePairs.add(new BasicNameValuePair("description", "Treasure-" + date));
-            nameValuePairs.add(new BasicNameValuePair("latitude", String.valueOf(lastKnownLocation.getLatitude())));
-            nameValuePairs.add(new BasicNameValuePair("longitude", String.valueOf(lastKnownLocation.getLongitude())));
-            nameValuePairs.add(new BasicNameValuePair("altitude", String.valueOf(lastKnownLocation.getAltitude())));
-            nameValuePairs.add(new BasicNameValuePair("file", image_str));
-            httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
-
-            // Execute HTTP Post Request
-            HttpResponse response = httpclient.execute(httppost);
-            Log.i("responso", response.toString());
-            return response;
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        }
-        return null;
-    }
-
-    class sendCache extends AsyncTask<String, Void, Void> {
         @Override
         protected Void doInBackground(String... urls) {
+            int waitMax = 3;
+            final File pictureFile = new File(picturePath);
+            while (!pictureFile.exists() && waitMax > 0) {
+                try {
+                    waitMax--;
+                    Thread.sleep(5000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            if(!pictureFile.exists()) {
+                // Could not write picture
+                Log.e("picture", "doesnt exists");
+                return null;
+            }
 
             HttpClient httpclient = new DefaultHttpClient();
             HttpPost httppost = new HttpPost(urls[0]);
             try {
-                //ambesten hier ein bitmap übergeben einen pfad oder sowas
-                Drawable myDrawable = getResources().getDrawable(R.drawable.logo); //achtung das muss geändert werden == R.drawable.logo
-                Bitmap myLogo = ((BitmapDrawable) myDrawable).getBitmap();
-
-                List<NameValuePair> nameValuePairs = new ArrayList<>(2);
+                Bitmap fileToSend = BitmapFactory.decodeFile(pictureFile.getPath());
+                List<NameValuePair> nameValuePairs = new ArrayList<>();
                 ByteArrayOutputStream stream = new ByteArrayOutputStream();
-                myLogo.compress(Bitmap.CompressFormat.PNG, 90, stream);
-                byte [] byte_arr = stream.toByteArray();
+                fileToSend.compress(Bitmap.CompressFormat.JPEG, 90, stream);
+                byte[] byte_arr = stream.toByteArray();
                 String image_str = Base64.encodeToString(byte_arr, Base64.DEFAULT);
 
                 nameValuePairs.add(new BasicNameValuePair("description", "Treasure-"));
-                nameValuePairs.add(new BasicNameValuePair("latitude", "30"));
-                nameValuePairs.add(new BasicNameValuePair("longitude", "30"));
-                nameValuePairs.add(new BasicNameValuePair("altitude", "30"));
+                nameValuePairs.add(new BasicNameValuePair("latitude", String.valueOf(lastKnownLocation.getLatitude())));
+                nameValuePairs.add(new BasicNameValuePair("longitude", String.valueOf(lastKnownLocation.getLongitude())));
+                nameValuePairs.add(new BasicNameValuePair("altitude", String.valueOf(lastKnownLocation.getAltitude())));
                 nameValuePairs.add(new BasicNameValuePair("file", image_str));
                 httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
 
@@ -314,5 +244,5 @@ public class CachingActivity extends AbstractArchitectActivity {
             return null;
         }
     }
-
 }
+
