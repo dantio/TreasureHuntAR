@@ -7,7 +7,7 @@ var express = require('express'), // REST-App
     sqlite3 = require('sqlite3').verbose(),
     db = new  sqlite3.Database('treasureHuntAR.db');
 
-var API_TOKEN = "e166a98596adb76ca46da0a1060bf3ca",
+var API_TOKEN = "76ee34c7c86c7680771fdef4b93ffade",
     API_VERSION = 2,
     LIMIT = 1000000000;
 
@@ -37,7 +37,7 @@ var server = app.listen(9999, function () {
     console.log('Server is listening at http://%s:%s', host, port)
 });
 var computeTargetImage = function (id, picture, callback) {
-    var IMAGE = [IMAGE_URL + picture];
+    var IMAGE = IMAGE_URL + "" +picture;
     API.convert(IMAGE, function (err, url) {
         if (err) {
             console.log("Error: " + err);
@@ -70,12 +70,11 @@ app.post('/cache64', function (req, res) {
 
             var picture = hash(32).toString();
             var newPath = __dirname + "/uploads/" +picture+".jpg";
-            console.log("http://" + host + ":" + port + "/" + newPath);
             fs.writeFile(newPath, new Buffer(req.body.file, "base64"), function(err) {
 
                 if (err) {
                     fs.unlinkSync(newPath);
-                    res.send(404).send("Nope");
+                    //res.send(404).send("Nope");
                 } else {
 
                     var description = req.body.description.toString();
@@ -87,11 +86,11 @@ app.post('/cache64', function (req, res) {
                     var q = db.prepare('INSERT INTO cache (description, picture, latitude, longitude, altitude) VALUES ("' + description + '","' + picture + '.jpg",' + latitude + ',' + longitude + ',' + altitude + ')');
                         q.run(function(err){
                             if (err) throw err;
-                            computeTargetImage(this.lastID,  IMAGE_URL+"uploads/" +picture+".jpg", function (state) {
+                            computeTargetImage(this.lastID, picture+".jpg", function (state) {
                                 if(state){
-                                    res.send(200).send("Cool");
+                                    //res.send(200).send("Cool");
                                 }else{
-                                    res.send(404).send("Nope");
+                                    //res.send(404).send("Nope");
                                 }
                             });
                         });
