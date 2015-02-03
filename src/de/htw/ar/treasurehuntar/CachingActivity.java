@@ -174,9 +174,10 @@ public class CachingActivity extends AbstractArchitectActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == TAKE_PICTURE_REQUEST && resultCode == RESULT_OK) {
+            String thumbnailPath = data.getStringExtra(Intents.EXTRA_THUMBNAIL_FILE_PATH);
             String picturePath = data.getStringExtra(Intents.EXTRA_PICTURE_FILE_PATH);
 
-            SendCache sC = new SendCache(picturePath);
+            SendCache sC = new SendCache(thumbnailPath);
             sC.execute(POST_IMAGE_URL);
         }
 
@@ -197,12 +198,13 @@ public class CachingActivity extends AbstractArchitectActivity {
 
         @Override
         protected Void doInBackground(String... urls) {
-            int waitMax = 3;
-            final File pictureFile = new File(picturePath);
+            int waitMax = 5;
+            File pictureFile = new File(picturePath);
             while (!pictureFile.exists() && waitMax > 0) {
                 try {
                     waitMax--;
                     Thread.sleep(5000);
+                    pictureFile = new File(picturePath);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
