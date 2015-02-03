@@ -7,7 +7,7 @@ var express = require('express'), // REST-App
     sqlite3 = require('sqlite3').verbose(),
     db = new  sqlite3.Database('treasureHuntAR.db');
 
-var API_TOKEN = "XXX",
+var API_TOKEN = "zMouy3qO4qG5b5/BT1xREMi21mMEf5MuS1dAKivyliDEfTC8zyTNNTLua/Iin5Pm9MtvqzyoikCS1+DwGb1c3s4NDZ1/auvwMT/oiadv/1mq8pQNL30EBg3VA28beiaghZneOsuVwEppKpY1+JsILQZYLKVw+cwC94lvp4K81j9TYWx0ZWRfX0Hp94Iut/ZB6fhtR/IYiohoXlcvGncpnOULCnogtoa04ILZVFF73yE/H57LiFtv29irwOM19LvPWGdI1SgJxMhmJcLHJM4HZ2+670MLexVI65WNhYG4Hruc5GlROaRpADBSf10Y+5OKAr+MWIkzk8D+EPMZK54jzRfDGwxH6hRJaT4KMmtl1C4tPkY7ItZkhxzC56Qy3XEMwo4LJirMTrq+G2JDZC/DvHfKfr3qSHSgDXs4Mx1+wTsXBPo4hXKKxWnON9567EgBSkWF/v8hjaHKgxfhI3y2cRqVk/ljsMIz9gyLjneDTej232cop6yqSgxl0TW+P+BQTEiUqqqWsFW7f91T4sOpYyT9heo7wEHC6rE3K3ovnW0m3AlNCfGeeQjKx1vf484TZ96CRbnY2E0Herurhqn6IJ6s0UPBiU83PtVRrc7srcwa/ulhSr/NU12fmOaBawLDY+HaujDeQpFlm7R5VkNW4PB2WOdPrJTV+mC8afq5iFaScCdkwXE8oIjflVZtalQ9",
     API_VERSION = 2,
     LIMIT = 1000000000;
 
