@@ -7,7 +7,7 @@ var express = require('express'), // REST-App
     sqlite3 = require('sqlite3').verbose(),
     db = new  sqlite3.Database('treasureHuntAR.db');
 
-var API_TOKEN = "zMouy3qO4qG5b5/BT1xREMi21mMEf5MuS1dAKivyliDEfTC8zyTNNTLua/Iin5Pm9MtvqzyoikCS1+DwGb1c3s4NDZ1/auvwMT/oiadv/1mq8pQNL30EBg3VA28beiaghZneOsuVwEppKpY1+JsILQZYLKVw+cwC94lvp4K81j9TYWx0ZWRfX0Hp94Iut/ZB6fhtR/IYiohoXlcvGncpnOULCnogtoa04ILZVFF73yE/H57LiFtv29irwOM19LvPWGdI1SgJxMhmJcLHJM4HZ2+670MLexVI65WNhYG4Hruc5GlROaRpADBSf10Y+5OKAr+MWIkzk8D+EPMZK54jzRfDGwxH6hRJaT4KMmtl1C4tPkY7ItZkhxzC56Qy3XEMwo4LJirMTrq+G2JDZC/DvHfKfr3qSHSgDXs4Mx1+wTsXBPo4hXKKxWnON9567EgBSkWF/v8hjaHKgxfhI3y2cRqVk/ljsMIz9gyLjneDTej232cop6yqSgxl0TW+P+BQTEiUqqqWsFW7f91T4sOpYyT9heo7wEHC6rE3K3ovnW0m3AlNCfGeeQjKx1vf484TZ96CRbnY2E0Herurhqn6IJ6s0UPBiU83PtVRrc7srcwa/ulhSr/NU12fmOaBawLDY+HaujDeQpFlm7R5VkNW4PB2WOdPrJTV+mC8afq5iFaScCdkwXE8oIjflVZtalQ9",
+var API_TOKEN = "e166a98596adb76ca46da0a1060bf3ca",
     API_VERSION = 2,
     LIMIT = 1000000000;
 
@@ -70,6 +70,7 @@ app.post('/cache64', function (req, res) {
 
             var picture = hash(32).toString();
             var newPath = __dirname + "/uploads/" +picture+".jpg";
+            console.log("http://" + host + ":" + port + "/" + newPath);
             fs.writeFile(newPath, new Buffer(req.body.file, "base64"), function(err) {
 
                 if (err) {
@@ -86,7 +87,7 @@ app.post('/cache64', function (req, res) {
                     var q = db.prepare('INSERT INTO cache (description, picture, latitude, longitude, altitude) VALUES ("' + description + '","' + picture + '.jpg",' + latitude + ',' + longitude + ',' + altitude + ')');
                         q.run(function(err){
                             if (err) throw err;
-                            computeTargetImage(this.lastID, "http://" + host + ":" + port + "/" + newPath + ":", function (state) {
+                            computeTargetImage(this.lastID,  IMAGE_URL+"uploads/" +picture+".jpg", function (state) {
                                 if(state){
                                     res.send(200).send("Cool");
                                 }else{
