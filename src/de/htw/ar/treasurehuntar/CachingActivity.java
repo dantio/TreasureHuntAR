@@ -6,6 +6,8 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.hardware.SensorManager;
 import android.location.LocationListener;
+import android.media.AudioFormat;
+import android.media.AudioTrack;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.provider.MediaStore;
@@ -27,9 +29,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -43,6 +43,8 @@ public class CachingActivity extends AbstractArchitectActivity {
 
     private final static String POST_IMAGE_URL = "http://vegapunk.de:9999/cache64";
    // private final static String POST_IMAGE_URL = "http://192.168.0.75:9999/cache64";
+   private final static String POST_AUDIO_URL = "http://vegapunk.de:9999/audio";
+
     /**
      * extras key for activity title, usually static and set in Manifest.xml
      */
@@ -65,6 +67,8 @@ public class CachingActivity extends AbstractArchitectActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         mGestureDetector = createGestureDetector(this);
+        myAudioRecorder = new AudioRecorder();
+
         super.onCreate(savedInstanceState);
     }
 
@@ -148,7 +152,10 @@ public class CachingActivity extends AbstractArchitectActivity {
                     takePicture();
                     return true;
                 } else if (gesture == Gesture.SWIPE_RIGHT) {
-                    recordAudioMessage();
+                    startRecording();
+                    return true;
+                } else if (gesture == Gesture.SWIPE_LEFT) {
+                    stopRecording();
                     return true;
                 }
                 return false;
@@ -158,8 +165,15 @@ public class CachingActivity extends AbstractArchitectActivity {
         return gestureDetector;
     }
 
-    private void recordAudioMessage() {
-        myAudioRecorder = new AudioRecorder();
+    private void startRecording() {
+        myAudioRecorder.record(true);
+    }
+
+    private void stopRecording() {
+        myAudioRecorder.record(false);
+
+        SendAudioCache sC = new SendAudioCache(myAudioRecorder.getPath());
+        sC.execute(POST_AUDIO_URL);
     }
 
     private void takePicture() {
@@ -252,6 +266,93 @@ public class CachingActivity extends AbstractArchitectActivity {
                 e.printStackTrace();
             }
             return null;
+        }
+    }
+
+    /**
+     * Send audio to server
+     */
+    class SendAudioCache extends AsyncTask<String, Void, Void> {
+
+        private final String audioPath;
+
+        SendAudioCache(String audioPath) {
+            this.audioPath = audioPath;
+        }
+
+        @Override
+        protected Void doInBackground(String... urls) {
+            int waitMax = 5;
+            File audioFile = new File(audioPath);
+            while (!audioFile.exists() && waitMax > 0) {
+                try {
+                    waitMax--;
+                    Thread.sleep(5000);
+                    audioFile = new File(audioPath);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            if(!audioFile.exists()) {
+                // Could not write audio
+                Log.e("audio", "doesnt exists");
+                return null;
+            }
+
+            HttpClient httpclient = new DefaultHttpClient();
+            HttpPost httppost = new HttpPost(urls[0]);
+            try {
+                List<NameValuePair> nameValuePairs = new ArrayList<>();
+                encodeFileToBase64Binary(audioPath);
+
+                nameValuePairs.add(new BasicNameValuePair("file", audioPath));
+                httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
+
+                // Execute HTTP Post Request
+                HttpResponse response = httpclient.execute(httppost);
+                //HttpEntity entity = response.getEntity();
+                //String data = EntityUtils.toString(entity);
+                //return new JSONArray(data);
+            } catch (ClientProtocolException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
+
+        private String encodeFileToBase64Binary(String fileName)
+                throws IOException {
+
+            File file = new File(fileName);
+            byte[] bytes = loadFile(file);
+            String encodedString = Base64.encodeToString(bytes, Base64.DEFAULT);
+
+            return encodedString;
+        }
+
+        private  byte[] loadFile(File file) throws IOException {
+            InputStream is = new FileInputStream(file);
+
+            long length = file.length();
+            if (length > Integer.MAX_VALUE) {
+// File is too large
+            }
+            byte[] bytes = new byte[(int)length];
+            int offset = 0;
+            int numRead = 0;
+            while (offset < bytes.length
+                    && (numRead=is.read(bytes, offset, bytes.length-offset)) >= 0) {
+                offset += numRead;
+            }
+
+            if (offset < bytes.length) {
+                throw new IOException("Could not completely read file "+file.getName());
+            }
+
+            is.close();
+            return bytes;
         }
     }
 }

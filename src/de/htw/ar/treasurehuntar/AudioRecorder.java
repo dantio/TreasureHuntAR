@@ -1,13 +1,8 @@
 package de.htw.ar.treasurehuntar;
 
 import android.app.Activity;
-import android.widget.LinearLayout;
 import android.os.Bundle;
 import android.os.Environment;
-import android.view.ViewGroup;
-import android.widget.Button;
-import android.view.View;
-import android.content.Context;
 import android.util.Log;
 import android.media.MediaRecorder;
 import android.media.MediaPlayer;
@@ -23,25 +18,39 @@ public class AudioRecorder extends Activity
     private static final String LOG_TAG = "AudioRecorder";
     private static String mFileName = null;
 
-    private RecordButton mRecordButton = null;
     private MediaRecorder mRecorder = null;
 
-    private PlayButton   mPlayButton = null;
     private MediaPlayer   mPlayer = null;
 
-    private void onRecord(boolean start) {
+    private boolean isRecording = false;
+    private boolean isPlaying = false;
+
+    protected void record(boolean start) {
         if (start) {
-            startRecording();
+            if (!isRecording) {
+                startRecording();
+                isRecording = true;
+            }
+
         } else {
-            stopRecording();
+            if (isRecording) {
+                stopRecording();
+                isRecording = false;
+            }
         }
     }
 
-    private void onPlay(boolean start) {
+    protected void play(boolean start) {
         if (start) {
-            startPlaying();
+            if (!isPlaying) {
+                startPlaying();
+                isPlaying = true;
+            }
         } else {
-            stopPlaying();
+            if (isPlaying) {
+                stopPlaying();
+                isPlaying = false;
+            }
         }
     }
 
@@ -83,48 +92,8 @@ public class AudioRecorder extends Activity
         mRecorder = null;
     }
 
-    class RecordButton extends Button {
-        boolean mStartRecording = true;
-
-        OnClickListener clicker = new OnClickListener() {
-            public void onClick(View v) {
-                onRecord(mStartRecording);
-                if (mStartRecording) {
-                    setText("Stop recording");
-                } else {
-                    setText("Start recording");
-                }
-                mStartRecording = !mStartRecording;
-            }
-        };
-
-        public RecordButton(Context ctx) {
-            super(ctx);
-            setText("Start recording");
-            setOnClickListener(clicker);
-        }
-    }
-
-    class PlayButton extends Button {
-        boolean mStartPlaying = true;
-
-        OnClickListener clicker = new OnClickListener() {
-            public void onClick(View v) {
-                onPlay(mStartPlaying);
-                if (mStartPlaying) {
-                    setText("Stop playing");
-                } else {
-                    setText("Start playing");
-                }
-                mStartPlaying = !mStartPlaying;
-            }
-        };
-
-        public PlayButton(Context ctx) {
-            super(ctx);
-            setText("Start playing");
-            setOnClickListener(clicker);
-        }
+    protected String getPath() {
+        return mFileName;
     }
 
     public AudioRecorder() {
@@ -135,21 +104,6 @@ public class AudioRecorder extends Activity
     @Override
     public void onCreate(Bundle icicle) {
         super.onCreate(icicle);
-
-        LinearLayout ll = new LinearLayout(this);
-        mRecordButton = new RecordButton(this);
-        ll.addView(mRecordButton,
-                new LinearLayout.LayoutParams(
-                        ViewGroup.LayoutParams.WRAP_CONTENT,
-                        ViewGroup.LayoutParams.WRAP_CONTENT,
-                        0));
-        mPlayButton = new PlayButton(this);
-        ll.addView(mPlayButton,
-                new LinearLayout.LayoutParams(
-                        ViewGroup.LayoutParams.WRAP_CONTENT,
-                        ViewGroup.LayoutParams.WRAP_CONTENT,
-                        0));
-        setContentView(ll);
     }
 
     @Override
