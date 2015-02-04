@@ -1,11 +1,16 @@
 package de.htw.ar.treasurehuntar;
 
 import android.app.Activity;
+import android.content.Context;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
 import android.media.MediaRecorder;
 import android.media.MediaPlayer;
+import android.view.MotionEvent;
+import android.widget.Toast;
+import com.google.android.glass.touchpad.Gesture;
+import com.google.android.glass.touchpad.GestureDetector;
 
 import java.io.IOException;
 
@@ -13,14 +18,14 @@ import java.io.IOException;
  * Created by Eric Haller on 02.02.2015.
  */
 
-public class AudioRecorder extends Activity
-{
+public class AudioRecorder extends Activity {
+    private GestureDetector mGestureDetector;
     private static final String LOG_TAG = "AudioRecorder";
     private static String mFileName = null;
 
     private MediaRecorder mRecorder = null;
 
-    private MediaPlayer   mPlayer = null;
+    private MediaPlayer mPlayer = null;
 
     private boolean isRecording = false;
     private boolean isPlaying = false;
@@ -54,14 +59,57 @@ public class AudioRecorder extends Activity
         }
     }
 
+    /**
+     * Send generic motion events to the gesture detector
+     *
+     * @param event
+     * @return
+     */
+    @Override
+    public boolean onGenericMotionEvent(MotionEvent event) {
+        return mGestureDetector != null && mGestureDetector.onMotionEvent(event);
+    }
+
+    private GestureDetector createGestureDetector(Context context) {
+        GestureDetector gestureDetector = new GestureDetector(context);
+        //Create a base listener for generic gestures
+        gestureDetector.setBaseListener(new GestureDetector.BaseListener() {
+            @Override
+            public boolean onGesture(Gesture gesture) {
+                if (gesture == Gesture.TAP) {
+                    Log.i("gesture", "Tap");
+                    startRecording();
+                    return true;
+                } else if (gesture == Gesture.SWIPE_RIGHT) {
+                    stopRecording();
+                    return true;
+                } else if (gesture == Gesture.SWIPE_LEFT) {
+                    startPlaying();
+                    return true;
+                }
+                return false;
+            }
+        });
+
+        return gestureDetector;
+    }
+
     private void startPlaying() {
+        Log.i("recorder", "start playing");
         mPlayer = new MediaPlayer();
+        mPlayer.setOnCompletionListener(new MediaPlayer.
+                OnCompletionListener() {
+            public void onCompletion(MediaPlayer mp) {
+                mPlayer.release();
+                mPlayer = null;
+            }
+        });
         try {
             mPlayer.setDataSource(mFileName);
             mPlayer.prepare();
             mPlayer.start();
         } catch (IOException e) {
-            Log.e(LOG_TAG, "prepare() failed");
+            Log.e("start", "prepare() failed");
         }
     }
 
@@ -71,18 +119,19 @@ public class AudioRecorder extends Activity
     }
 
     private void startRecording() {
+        Log.i("recorder", "start recording");
         mRecorder = new MediaRecorder();
-        mRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
-        mRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
+        // the settings below are important for the capture
+        // and playback to work in Glass
+        mRecorder.setAudioSource(MediaRecorder.AudioSource.DEFAULT);
+        mRecorder.setOutputFormat(MediaRecorder.OutputFormat.DEFAULT);
+        mRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
         mRecorder.setOutputFile(mFileName);
-        mRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
-
         try {
             mRecorder.prepare();
         } catch (IOException e) {
-            Log.e(LOG_TAG, "prepare() failed");
+            Log.e("Recorder", "prepare() failed");
         }
-
         mRecorder.start();
     }
 
@@ -96,13 +145,14 @@ public class AudioRecorder extends Activity
         return mFileName;
     }
 
-    public AudioRecorder() {
-        mFileName = Environment.getExternalStorageDirectory().getAbsolutePath();
-        mFileName += "/AudioRecorder.3gp";
-    }
-
     @Override
     public void onCreate(Bundle icicle) {
+        Toast.makeText(AudioRecorder.this,
+                R.string.poi_detail_title, Toast.LENGTH_LONG)
+                .show();
+        mFileName = Environment.getExternalStorageDirectory().getAbsolutePath();
+        mFileName += "/AudioRecorder.3gp";
+        mGestureDetector = createGestureDetector(this);
         super.onCreate(icicle);
     }
 

@@ -114,7 +114,7 @@ var TreasureHuntAR = {
             }
         );
         // test
-        //TreasureHuntAR.inActionRange();
+        TreasureHuntAR.inActionRange();
     },
 
     // User swiped down want to stop

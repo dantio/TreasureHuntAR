@@ -6,8 +6,6 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.hardware.SensorManager;
 import android.location.LocationListener;
-import android.media.AudioFormat;
-import android.media.AudioTrack;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.provider.MediaStore;
@@ -40,10 +38,10 @@ public class CachingActivity extends AbstractArchitectActivity {
 
     // take picture logic
     private static final int TAKE_PICTURE_REQUEST = 1;
+    private static final int TAKE_AUDIO_REQUEST = 2;
 
     private final static String POST_IMAGE_URL = "http://vegapunk.de:9999/cache64";
-   // private final static String POST_IMAGE_URL = "http://192.168.0.75:9999/cache64";
-   private final static String POST_AUDIO_URL = "http://vegapunk.de:9999/audio";
+    private final static String POST_AUDIO_URL = "http://vegapunk.de:9999/audio";
 
     /**
      * extras key for activity title, usually static and set in Manifest.xml
@@ -62,12 +60,10 @@ public class CachingActivity extends AbstractArchitectActivity {
             .currentTimeMillis();
 
     private GestureDetector mGestureDetector;
-    private AudioRecorder myAudioRecorder;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         mGestureDetector = createGestureDetector(this);
-        myAudioRecorder = new AudioRecorder();
 
         super.onCreate(savedInstanceState);
     }
@@ -154,9 +150,6 @@ public class CachingActivity extends AbstractArchitectActivity {
                 } else if (gesture == Gesture.SWIPE_RIGHT) {
                     startRecording();
                     return true;
-                } else if (gesture == Gesture.SWIPE_LEFT) {
-                    stopRecording();
-                    return true;
                 }
                 return false;
             }
@@ -166,14 +159,12 @@ public class CachingActivity extends AbstractArchitectActivity {
     }
 
     private void startRecording() {
-        myAudioRecorder.record(true);
-    }
+       // Intent intent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
+       // intent.putExtra(MediaStore.EXTRA_DURATION_LIMIT, 60);
+       // startActivityForResult(intent, TAKE_AUDIO_REQUEST);
 
-    private void stopRecording() {
-        myAudioRecorder.record(false);
-
-        SendAudioCache sC = new SendAudioCache(myAudioRecorder.getPath());
-        sC.execute(POST_AUDIO_URL);
+        Intent intent = new Intent(this, AudioRecorder.class);
+        startActivityForResult(intent, TAKE_AUDIO_REQUEST);
     }
 
     private void takePicture() {
@@ -195,14 +186,19 @@ public class CachingActivity extends AbstractArchitectActivity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == TAKE_PICTURE_REQUEST && resultCode == RESULT_OK) {
-            String thumbnailPath = data.getStringExtra(Intents.EXTRA_THUMBNAIL_FILE_PATH);
-            String picturePath = data.getStringExtra(Intents.EXTRA_PICTURE_FILE_PATH);
+        if (resultCode == RESULT_OK) {
+            switch (requestCode) {
+                case TAKE_PICTURE_REQUEST:
+                    String thumbnailPath = data.getStringExtra(Intents.EXTRA_THUMBNAIL_FILE_PATH);
+                    new SendCache(thumbnailPath).execute(POST_IMAGE_URL);
+                    break;
 
-            SendCache sC = new SendCache(thumbnailPath);
-            sC.execute(POST_IMAGE_URL);
+                case TAKE_AUDIO_REQUEST:
+                    String videoPath = data.getStringExtra(Intents.EXTRA_VIDEO_FILE_PATH);
+                    new SendAudioCache(videoPath).execute(POST_AUDIO_URL);
+                    break;
+            }
         }
-
         super.onActivityResult(requestCode, resultCode, data);
     }
 
@@ -232,7 +228,7 @@ public class CachingActivity extends AbstractArchitectActivity {
                 }
             }
 
-            if(!pictureFile.exists()) {
+            if (!pictureFile.exists()) {
                 // Could not write picture
                 Log.e("picture", "doesnt exists");
                 return null;
@@ -294,7 +290,7 @@ public class CachingActivity extends AbstractArchitectActivity {
                 }
             }
 
-            if(!audioFile.exists()) {
+            if (!audioFile.exists()) {
                 // Could not write audio
                 Log.e("audio", "doesnt exists");
                 return null;
@@ -304,9 +300,9 @@ public class CachingActivity extends AbstractArchitectActivity {
             HttpPost httppost = new HttpPost(urls[0]);
             try {
                 List<NameValuePair> nameValuePairs = new ArrayList<>();
-                encodeFileToBase64Binary(audioPath);
+                String base64String = encodeFileToBase64Binary(audioPath);
 
-                nameValuePairs.add(new BasicNameValuePair("file", audioPath));
+                nameValuePairs.add(new BasicNameValuePair("file", base64String));
                 httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
 
                 // Execute HTTP Post Request
@@ -327,28 +323,27 @@ public class CachingActivity extends AbstractArchitectActivity {
 
             File file = new File(fileName);
             byte[] bytes = loadFile(file);
-            String encodedString = Base64.encodeToString(bytes, Base64.DEFAULT);
-
-            return encodedString;
+            return Base64.encodeToString(bytes, Base64.DEFAULT);
         }
 
-        private  byte[] loadFile(File file) throws IOException {
+        private byte[] loadFile(File file) throws IOException {
             InputStream is = new FileInputStream(file);
 
             long length = file.length();
             if (length > Integer.MAX_VALUE) {
-// File is too large
+                // File is too large
+                return null;
             }
-            byte[] bytes = new byte[(int)length];
+            byte[] bytes = new byte[(int) length];
             int offset = 0;
             int numRead = 0;
             while (offset < bytes.length
-                    && (numRead=is.read(bytes, offset, bytes.length-offset)) >= 0) {
+                    && (numRead = is.read(bytes, offset, bytes.length - offset)) >= 0) {
                 offset += numRead;
             }
 
             if (offset < bytes.length) {
-                throw new IOException("Could not completely read file "+file.getName());
+                throw new IOException("Could not completely read file " + file.getName());
             }
 
             is.close();
