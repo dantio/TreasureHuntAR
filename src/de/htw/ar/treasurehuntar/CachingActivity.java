@@ -30,6 +30,8 @@ import org.apache.http.message.BasicNameValuePair;
 import org.json.JSONArray;
 
 import java.io.*;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -198,162 +200,108 @@ public class CachingActivity extends AbstractArchitectActivity {
     }
 
 
-    /**
-     * Send picture to server
-     */
-    class SendCache extends AsyncTask<String, Void, Integer> {
-
-        private final String picturePath;
-
-        SendCache(String picturePath) {
-            this.picturePath = picturePath;
-        }
-
-        @Override
-        protected Integer doInBackground(String... urls) {
-            int waitMax = 5;
-            File pictureFile = new File(picturePath);
-            while (!pictureFile.exists() && waitMax > 0) {
-                try {
-                    waitMax--;
-                    Thread.sleep(5000);
-                    pictureFile = new File(picturePath);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-
-            if (!pictureFile.exists()) {
-                // Could not write picture
-                Log.e("picture", "doesnt exists");
-                return null;
-            }
-
-            HttpClient httpclient = new DefaultHttpClient();
-            HttpPost httppost = new HttpPost(urls[0]);
-            try {
-                Bitmap fileToSend = BitmapFactory.decodeFile(pictureFile.getPath());
-                List<NameValuePair> nameValuePairs = new ArrayList<>();
-                ByteArrayOutputStream stream = new ByteArrayOutputStream();
-                fileToSend.compress(Bitmap.CompressFormat.JPEG, 90, stream);
-                byte[] byte_arr = stream.toByteArray();
-                String image_str = Base64.encodeToString(byte_arr, Base64.DEFAULT);
-
-                nameValuePairs.add(new BasicNameValuePair("description", "Treasure-"));
-                nameValuePairs.add(new BasicNameValuePair("latitude", String.valueOf(lastKnownLocation.getLatitude())));
-                nameValuePairs.add(new BasicNameValuePair("longitude", String.valueOf(lastKnownLocation.getLongitude())));
-                nameValuePairs.add(new BasicNameValuePair("altitude", String.valueOf(lastKnownLocation.getAltitude())));
-                nameValuePairs.add(new BasicNameValuePair("file", image_str));
-                httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
-
-                // Execute HTTP Post Request
-                HttpResponse response = httpclient.execute(httppost);
-
-                return response.getStatusLine().getStatusCode();
-            } catch (ClientProtocolException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(Integer statusCode) {
-            if (statusCode != HttpStatus.SC_OK) {
-                // Bild konnte nicht hochgeladen werden
-                return;
-            }
-
-            Intent intent = new Intent(CachingActivity.this, AudioRecorder.class);
-            intent.putExtra("imgPath", picturePath);
-            startActivityForResult(intent, TAKE_AUDIO_REQUEST);
-        }
-    }
+   
 
     /**
-     * Send audio to server
+     * Send file to server
      */
-    class SendAudioCache extends AsyncTask<String, Void, Void> {
+    class SendFileCache extends AsyncTask<String, Void, Void> {
 
-        private final String audioPath;
+        private String imagePath;
+        private String audioPath;
 
-        SendAudioCache(String audioPath) {
-            this.audioPath = audioPath;
-        }
+        HttpURLConnection mUrlConnection;
+
+        String mResult;
 
         @Override
         protected Void doInBackground(String... urls) {
-            int waitMax = 5;
-            File audioFile = new File(audioPath);
-            while (!audioFile.exists() && waitMax > 0) {
-                try {
-                    waitMax--;
-                    Thread.sleep(5000);
-                    audioFile = new File(audioPath);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
+            imagePath = urls[0];
+            audioPath = urls[1];
 
-            if (!audioFile.exists()) {
-                // Could not write audio
-                Log.e("audio", "doesnt exists");
-                return null;
-            }
-
-            HttpClient httpclient = new DefaultHttpClient();
-            HttpPost httppost = new HttpPost(urls[0]);
             try {
-                List<NameValuePair> nameValuePairs = new ArrayList<>();
-                String base64String = encodeFileToBase64Binary(audioPath);
+                int serverResponseCode = 0;
+                File imageFile = new File(imagePath);
+                File audioFile = new File(audioPath);
+                DataOutputStream dos = null;
+                String lineEnd = "\r\n";
+                String twoHyphens = "--";
+                String boundary = "*****";
+                int bytesRead, bytesAvailable, bufferSize;
+                byte[] buffer;
+                int maxBufferSize = 1024 * 1024;
+                int REQUEST_SUCCESS_CODE = 200;
+                FileInputStream fileInputStream = new FileInputStream(imageFile);
+                URL url = new URL(POST_AUDIO_URL);
+                mUrlConnection = (HttpURLConnection) url.openConnection();
+                mUrlConnection.setRequestMethod("POST");
+                mUrlConnection.setRequestProperty("description", "Treasure-"); // TODO: Voice Recognition Text einfuegen
+                mUrlConnection.setRequestProperty("latitude", String.valueOf(lastKnownLocation.getLatitude()));
+                mUrlConnection.setRequestProperty("longitude", String.valueOf(lastKnownLocation.getLongitude()));
+                mUrlConnection.setRequestProperty("altitude",String.valueOf(lastKnownLocation.getAltitude()));
+                // write ImageData to Request
+                mUrlConnection.setRequestProperty("Content-Type", "multipart/form-data;boundary=" + boundary);
+                mUrlConnection.setRequestProperty("imageData", imageFile.getName());
+                dos = new DataOutputStream(mUrlConnection.getOutputStream());
+                dos.writeBytes(twoHyphens + boundary + lineEnd);
+                dos.writeBytes("Content-Disposition: form-data; name=Filedata;filename=" + imageFile.getName() +
+                        lineEnd);
+                dos.writeBytes(lineEnd);
+                bytesAvailable = fileInputStream.available();
+                bufferSize = Math.min(bytesAvailable, maxBufferSize);
+                buffer = new byte[bufferSize];
+                bytesRead = fileInputStream.read(buffer, 0, bufferSize);
+                while (bytesRead > 0) {
+                    dos.write(buffer, 0, bufferSize);
+                    bytesAvailable = fileInputStream.available();
+                    bufferSize = Math.min(bytesAvailable, maxBufferSize);
+                    bytesRead = fileInputStream.read(buffer, 0, bufferSize);
+                }
+                dos.writeBytes(lineEnd);
+                dos.writeBytes(twoHyphens + boundary + twoHyphens + lineEnd);
+                fileInputStream.close();
+                dos.close();
 
-                nameValuePairs.add(new BasicNameValuePair("file", base64String));
-                httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
+                // write Audio Data to Request
+                fileInputStream = new FileInputStream(audioFile);
+                mUrlConnection.setRequestProperty("Content-Type", "multipart/form-data;boundary=" + boundary);
+                mUrlConnection.setRequestProperty("audioData", audioFile.getName());
+                dos = new DataOutputStream(mUrlConnection.getOutputStream());
+                dos.writeBytes(twoHyphens + boundary + lineEnd);
+                dos.writeBytes("Content-Disposition: form-data; name=Filedata;filename=" + audioFile.getName() +
+                        lineEnd);
+                dos.writeBytes(lineEnd);
+                bytesAvailable = fileInputStream.available();
+                bufferSize = Math.min(bytesAvailable, maxBufferSize);
+                buffer = new byte[bufferSize];
+                bytesRead = fileInputStream.read(buffer, 0, bufferSize);
+                while (bytesRead > 0) {
+                    dos.write(buffer, 0, bufferSize);
+                    bytesAvailable = fileInputStream.available();
+                    bufferSize = Math.min(bytesAvailable, maxBufferSize);
+                    bytesRead = fileInputStream.read(buffer, 0, bufferSize);
+                }
+                dos.writeBytes(lineEnd);
+                dos.writeBytes(twoHyphens + boundary + twoHyphens + lineEnd);
+                fileInputStream.close();
+                dos.close();
 
-                // Execute HTTP Post Request
-                HttpResponse response = httpclient.execute(httppost);
-                //HttpEntity entity = response.getEntity();
-                //String data = EntityUtils.toString(entity);
-                //return new JSONArray(data);
-            } catch (ClientProtocolException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+                // Responses from the server (code and message)
+                serverResponseCode = mUrlConnection.getResponseCode();
+                String serverResponseMessage = mUrlConnection.getResponseMessage();
+                if (serverResponseCode == REQUEST_SUCCESS_CODE) {
+                    InputStream is = mUrlConnection.getInputStream();
+                    int ch;
+                    StringBuffer b = new StringBuffer();
+                    while ((ch = is.read()) != -1) {
+                        b.append((char) ch);
+                    }
+                    final String uploadedFilename = b.toString();
+                    mResult = "uploaded file at http://www.morkout.com/glass/uploads/" + uploadedFilename;
+                    is.close();
+                }
+            } catch (Exception e) {}
             return null;
-        }
-
-        private String encodeFileToBase64Binary(String fileName)
-                throws IOException {
-
-            File file = new File(fileName);
-            byte[] bytes = loadFile(file);
-            return Base64.encodeToString(bytes, Base64.DEFAULT);
-        }
-
-        private byte[] loadFile(File file) throws IOException {
-            InputStream is = new FileInputStream(file);
-
-            long length = file.length();
-            if (length > Integer.MAX_VALUE) {
-                // File is too large
-                return null;
-            }
-            byte[] bytes = new byte[(int) length];
-            int offset = 0;
-            int numRead = 0;
-            while (offset < bytes.length
-                    && (numRead = is.read(bytes, offset, bytes.length - offset)) >= 0) {
-                offset += numRead;
-            }
-
-            if (offset < bytes.length) {
-                throw new IOException("Could not completely read file " + file.getName());
-            }
-
-            is.close();
-            return bytes;
         }
     }
 }
