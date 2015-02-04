@@ -41,8 +41,8 @@ public class CachingActivity extends AbstractArchitectActivity {
     // take picture logic
     private static final int TAKE_PICTURE_REQUEST = 1;
 
-   // private final static String POST_IMAGE_URL = "http://vegapunk.de:9999/cache64";
-    private final static String POST_IMAGE_URL = "http://192.168.0.75:9999/cache64";
+    private final static String POST_IMAGE_URL = "http://vegapunk.de:9999/cache64";
+   // private final static String POST_IMAGE_URL = "http://192.168.0.75:9999/cache64";
     /**
      * extras key for activity title, usually static and set in Manifest.xml
      */
@@ -60,6 +60,7 @@ public class CachingActivity extends AbstractArchitectActivity {
             .currentTimeMillis();
 
     private GestureDetector mGestureDetector;
+    private AudioRecorder myAudioRecorder;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -146,12 +147,19 @@ public class CachingActivity extends AbstractArchitectActivity {
                     Log.i("gesture", "Tap");
                     takePicture();
                     return true;
+                } else if (gesture == Gesture.SWIPE_RIGHT) {
+                    recordAudioMessage();
+                    return true;
                 }
                 return false;
             }
         });
 
         return gestureDetector;
+    }
+
+    private void recordAudioMessage() {
+        myAudioRecorder = new AudioRecorder();
     }
 
     private void takePicture() {
