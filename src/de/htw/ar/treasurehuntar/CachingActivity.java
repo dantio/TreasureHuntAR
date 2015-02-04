@@ -41,9 +41,10 @@ public class CachingActivity extends AbstractArchitectActivity {
     // take picture logic
     private static final int TAKE_PICTURE_REQUEST = 1;
 
-   // private final static String POST_IMAGE_URL = "http://vegapunk.de:9999/cache64";
-    private final static String POST_IMAGE_URL = "http://192.168.0.75:9999/cache64";
-    private final static String POST_AUDIO_URL = "http://192.168.0.75:9999/audio";
+    private final static String POST_IMAGE_URL = "http://vegapunk.de:9999/cache64";
+   // private final static String POST_IMAGE_URL = "http://192.168.0.75:9999/cache64";
+   private final static String POST_AUDIO_URL = "http://vegapunk.de:9999/audio";
+
     /**
      * extras key for activity title, usually static and set in Manifest.xml
      */

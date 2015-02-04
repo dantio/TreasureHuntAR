@@ -28,18 +28,16 @@ var IMAGE_URL = 'http://ericwuendisch.de/restnode/server/uploads/'; //remember t
 app.use(bodyParser.json({limit: LIMIT})); // for parsing application/json
 app.use(bodyParser.urlencoded({extended: true, limit: LIMIT})); // for parsing application/x-www-form-urlencoded
 app.use(multer({limit: LIMIT, size: LIMIT})); // for parsing multipart/form-data
-var host = null;
-var port = null;
 
 var server = app.listen(9999, function () {
-    host = server.address().address;
-    port = server.address().port;
+    var host = server.address().address;
+    var port = server.address().port;
     console.log('Server is listening at http://%s:%s', host, port)
 });
 var computeTargetImage = function (id, picture, callback) {
     var IMAGE = IMAGE_URL + "" +picture;
     console.log(IMAGE);
-    API.convert(IMAGE, function (err, url) {
+    API.convert([IMAGE], function (err, url) {
         if (err) {
             console.log("Error: " + err);
             callback(false);
