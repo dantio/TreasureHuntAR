@@ -159,10 +159,6 @@ public class CachingActivity extends AbstractArchitectActivity {
     }
 
     private void startRecording() {
-       // Intent intent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
-       // intent.putExtra(MediaStore.EXTRA_DURATION_LIMIT, 60);
-       // startActivityForResult(intent, TAKE_AUDIO_REQUEST);
-
         Intent intent = new Intent(this, AudioRecorder.class);
         startActivityForResult(intent, TAKE_AUDIO_REQUEST);
     }

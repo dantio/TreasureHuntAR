@@ -2,12 +2,14 @@ package de.htw.ar.treasurehuntar;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
 import android.media.MediaRecorder;
 import android.media.MediaPlayer;
 import android.view.MotionEvent;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 import com.google.android.glass.touchpad.Gesture;
 import com.google.android.glass.touchpad.GestureDetector;
@@ -121,6 +123,7 @@ public class AudioRecorder extends Activity {
     private void startRecording() {
         Log.i("recorder", "start recording");
         mRecorder = new MediaRecorder();
+        mRecorder.setMaxDuration(5000);
         // the settings below are important for the capture
         // and playback to work in Glass
         mRecorder.setAudioSource(MediaRecorder.AudioSource.DEFAULT);
@@ -147,12 +150,17 @@ public class AudioRecorder extends Activity {
 
     @Override
     public void onCreate(Bundle icicle) {
-        Toast.makeText(AudioRecorder.this,
-                R.string.poi_detail_title, Toast.LENGTH_LONG)
-                .show();
         mFileName = Environment.getExternalStorageDirectory().getAbsolutePath();
         mFileName += "/AudioRecorder.3gp";
         mGestureDetector = createGestureDetector(this);
+
+        LinearLayout ll = new LinearLayout(this);
+        //ll.addView(mRecordButton,
+        //        new LinearLayout.LayoutParams(
+        //                ViewGroup.LayoutParams.WRAP_CONTENT,
+        //                ViewGroup.LayoutParams.WRAP_CONTENT,
+        //                0));
+        setContentView(ll);
         super.onCreate(icicle);
     }
 
@@ -168,5 +176,15 @@ public class AudioRecorder extends Activity {
             mPlayer.release();
             mPlayer = null;
         }
+    }
+
+    private void finishWithResult()
+    {
+        Bundle conData = new Bundle();
+        conData.putString("audioPath", mFileName);
+        Intent intent = new Intent();
+        intent.putExtras(conData);
+        setResult(RESULT_OK, intent);
+        finish();
     }
 }
