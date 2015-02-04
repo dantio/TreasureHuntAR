@@ -3,14 +3,17 @@ package de.htw.ar.treasurehuntar;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.drawable.Drawable;
+import android.media.MediaPlayer;
+import android.media.MediaRecorder;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.os.Environment;
 import android.util.Log;
-import android.media.MediaRecorder;
-import android.media.MediaPlayer;
+import android.view.Gravity;
 import android.view.MotionEvent;
-import android.widget.LinearLayout;
-import android.widget.Toast;
+import android.view.ViewGroup;
+import android.widget.*;
 import com.google.android.glass.touchpad.Gesture;
 import com.google.android.glass.touchpad.GestureDetector;
 
@@ -24,6 +27,9 @@ public class AudioRecorder extends Activity {
     private GestureDetector mGestureDetector;
     private static final String LOG_TAG = "AudioRecorder";
     private static String mFileName = null;
+    private static String mImagePath = null;
+
+    private TextView mTimer;
 
     private MediaRecorder mRecorder = null;
 
@@ -80,14 +86,20 @@ public class AudioRecorder extends Activity {
             public boolean onGesture(Gesture gesture) {
                 if (gesture == Gesture.TAP) {
                     Log.i("gesture", "Tap");
-                    startRecording();
+                    if (isRecording) {
+                        record(true);
+                    } else if (!isPlaying) {
+                        play(true);
+                    } else {
+                        finishWithResult();
+                    }
                     return true;
-                } else if (gesture == Gesture.SWIPE_RIGHT) {
-                    stopRecording();
-                    return true;
-                } else if (gesture == Gesture.SWIPE_LEFT) {
-                    startPlaying();
-                    return true;
+                } else if (gesture == Gesture.SWIPE_DOWN) {
+                    if (isRecording) {
+                        record(false);
+                    } else if (isPlaying) {
+                        play(false);
+                    }
                 }
                 return false;
             }
@@ -122,6 +134,7 @@ public class AudioRecorder extends Activity {
 
     private void startRecording() {
         Log.i("recorder", "start recording");
+
         mRecorder = new MediaRecorder();
         mRecorder.setMaxDuration(5000);
         // the settings below are important for the capture
@@ -136,6 +149,18 @@ public class AudioRecorder extends Activity {
             Log.e("Recorder", "prepare() failed");
         }
         mRecorder.start();
+
+        new CountDownTimer(5000, 1000) {
+
+            public void onTick(long millisUntilFinished) {
+                mTimer.setText("noch " + millisUntilFinished / 1000 + " sek");
+            }
+
+            public void onFinish() {
+                mTimer.setText("Audio wurde aufgenommen!");
+                record(false);
+            }
+        }.start();
     }
 
     private void stopRecording() {
@@ -154,13 +179,31 @@ public class AudioRecorder extends Activity {
         mFileName += "/AudioRecorder.3gp";
         mGestureDetector = createGestureDetector(this);
 
-        LinearLayout ll = new LinearLayout(this);
-        //ll.addView(mRecordButton,
-        //        new LinearLayout.LayoutParams(
-        //                ViewGroup.LayoutParams.WRAP_CONTENT,
-        //                ViewGroup.LayoutParams.WRAP_CONTENT,
-        //                0));
-        setContentView(ll);
+        Intent intent = getIntent();
+        mImagePath = intent.getStringExtra("imgPath");
+
+        Log.i("record", mImagePath);
+
+        Toast.makeText(AudioRecorder.this, R.string.record_hint, Toast.LENGTH_SHORT).show();
+
+        ImageView imageView = new ImageView(this);
+        mTimer = new TextView(this);
+        mTimer.setText("Starte die Aufnahme");
+        mTimer.setGravity(Gravity.RIGHT);
+        imageView.setBackgroundResource(R.drawable.record);
+        RelativeLayout rl = new RelativeLayout(this);
+        rl.setBackground(Drawable.createFromPath(mImagePath));
+
+        rl.addView(imageView,
+                new LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                        0));
+
+        // Add Timer
+        rl.addView(mTimer);
+
+        setContentView(rl);
         super.onCreate(icicle);
     }
 
@@ -178,10 +221,11 @@ public class AudioRecorder extends Activity {
         }
     }
 
-    private void finishWithResult()
-    {
+    private void finishWithResult() {
         Bundle conData = new Bundle();
         conData.putString("audioPath", mFileName);
+        conData.putString("imgPath", mImagePath);
+
         Intent intent = new Intent();
         intent.putExtras(conData);
         setResult(RESULT_OK, intent);

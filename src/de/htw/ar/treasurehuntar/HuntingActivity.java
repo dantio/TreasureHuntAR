@@ -338,6 +338,7 @@ public class HuntingActivity extends AbstractArchitectActivity {
             return null;
         }
 
+        @Override
         protected void onPostExecute(JSONArray result) {
 
             if (result == null) {

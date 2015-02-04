@@ -19,6 +19,7 @@ import com.google.android.glass.touchpad.GestureDetector;
 import com.wikitude.architect.ArchitectView.ArchitectUrlListener;
 import com.wikitude.architect.ArchitectView.SensorAccuracyChangeListener;
 import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
@@ -26,6 +27,7 @@ import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
+import org.json.JSONArray;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -147,20 +149,12 @@ public class CachingActivity extends AbstractArchitectActivity {
                     Log.i("gesture", "Tap");
                     takePicture();
                     return true;
-                } else if (gesture == Gesture.SWIPE_RIGHT) {
-                    startRecording();
-                    return true;
                 }
                 return false;
             }
         });
 
         return gestureDetector;
-    }
-
-    private void startRecording() {
-        Intent intent = new Intent(this, AudioRecorder.class);
-        startActivityForResult(intent, TAKE_AUDIO_REQUEST);
     }
 
     private void takePicture() {
@@ -184,14 +178,19 @@ public class CachingActivity extends AbstractArchitectActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (resultCode == RESULT_OK) {
             switch (requestCode) {
+                // First take a picure
                 case TAKE_PICTURE_REQUEST:
                     String thumbnailPath = data.getStringExtra(Intents.EXTRA_THUMBNAIL_FILE_PATH);
-                    new SendCache(thumbnailPath).execute(POST_IMAGE_URL);
+                    Intent intent = new Intent(CachingActivity.this, AudioRecorder.class);
+                    intent.putExtra("imgPath", thumbnailPath);
+                    startActivityForResult(intent, TAKE_AUDIO_REQUEST);
                     break;
 
+                // Record audio and send to server
                 case TAKE_AUDIO_REQUEST:
-                    String videoPath = data.getStringExtra(Intents.EXTRA_VIDEO_FILE_PATH);
-                    new SendAudioCache(videoPath).execute(POST_AUDIO_URL);
+                    String audioPath = data.getStringExtra("audioPath");
+                    String imgPath = data.getStringExtra("imgPath");
+                    new SendAudioCache(audioPath).execute(POST_AUDIO_URL);
                     break;
             }
         }
@@ -202,7 +201,7 @@ public class CachingActivity extends AbstractArchitectActivity {
     /**
      * Send picture to server
      */
-    class SendCache extends AsyncTask<String, Void, Void> {
+    class SendCache extends AsyncTask<String, Void, Integer> {
 
         private final String picturePath;
 
@@ -211,7 +210,7 @@ public class CachingActivity extends AbstractArchitectActivity {
         }
 
         @Override
-        protected Void doInBackground(String... urls) {
+        protected Integer doInBackground(String... urls) {
             int waitMax = 5;
             File pictureFile = new File(picturePath);
             while (!pictureFile.exists() && waitMax > 0) {
@@ -249,15 +248,26 @@ public class CachingActivity extends AbstractArchitectActivity {
 
                 // Execute HTTP Post Request
                 HttpResponse response = httpclient.execute(httppost);
-                //HttpEntity entity = response.getEntity();
-                //String data = EntityUtils.toString(entity);
-                //return new JSONArray(data);
+
+                return response.getStatusLine().getStatusCode();
             } catch (ClientProtocolException e) {
                 e.printStackTrace();
             } catch (IOException e) {
                 e.printStackTrace();
             }
             return null;
+        }
+
+        @Override
+        protected void onPostExecute(Integer statusCode) {
+            if (statusCode != HttpStatus.SC_OK) {
+                // Bild konnte nicht hochgeladen werden
+                return;
+            }
+
+            Intent intent = new Intent(CachingActivity.this, AudioRecorder.class);
+            intent.putExtra("imgPath", picturePath);
+            startActivityForResult(intent, TAKE_AUDIO_REQUEST);
         }
     }
 

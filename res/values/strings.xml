@@ -9,6 +9,7 @@
     <string name="found_treaures">%1d Schätze in der Nähe :)</string>
     <string name="get_treasure">Schatz wird vorbereitet...</string>
     <string name="treasure_hunt">Schatzsuche!</string>
+    <string name="record_hint">Nehmen sie eine Botschaft auf!</string>
 
 
     <string name="main_title_urlLauncher">Launch World via url</string>
