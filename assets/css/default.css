@@ -108,3 +108,14 @@ tr {
     text-decoration: none;
     text-shadow: 1px 1px 0px #ffffff;
 }
+
+#hintImageWrapper {
+    display: none;
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+}
+
+#hintImage {
+    width: 100px;
+}

@@ -34,13 +34,13 @@ import java.util.Random;
 public class HuntingActivity extends AbstractArchitectActivity {
 
     protected JSONArray poiData;
-    protected Map<Integer, String> targets = new HashMap<>();
 
     protected boolean isLoadingCaches = false;
     protected boolean isLoadingTarget = false;
 
-    // Endpoints
+    // Endpoints http://ericwuendisch.de/restnode/server/uploads/
     public static final String ALL_CACHES = "http://www.vegapunk.de:9999/caches";
+    public static final String UPLOAD_PATH = "http://ericwuendisch.de/restnode/server/uploads/";
 
     // User go for magnifier
     public static final String ACTION_START_HUNTING_MAGNIFIER = "startHuntingMagnifier";
@@ -65,7 +65,7 @@ public class HuntingActivity extends AbstractArchitectActivity {
     /**
      * max tresures
      */
-    public static final int MIN_TRESURES = 20;
+    public static final int MIN_TRESURES = 1;
 
     /**
      * last time the calibration toast was shown, this avoids too many toast shown when compass needs calibration
@@ -141,7 +141,8 @@ public class HuntingActivity extends AbstractArchitectActivity {
                             ACTION_START_HUNTING_TREASURE.length() + "?id="
                                     .length());
                     int treasureId = Integer.parseInt(idString);
-                    //loadTreasureData(treasureId);
+                    Log.i(ACTION_START_HUNTING_TREASURE, "" + treasureId);
+
                 }
 
                 return false;
@@ -226,6 +227,7 @@ public class HuntingActivity extends AbstractArchitectActivity {
         final String ATTR_LATITUDE = "latitude";
         final String ATTR_LONGITUDE = "longitude";
         final String ATTR_ALTITUDE = "altitude";
+        final String ATTR_PICTURE = "picture";
         final String TARGET = "target";
 
         if (js != null) {
@@ -244,9 +246,9 @@ public class HuntingActivity extends AbstractArchitectActivity {
                     poiInformation.put(ATTR_LATITUDE, obj.getString("latitude"));
                     poiInformation.put(ATTR_LONGITUDE, obj.getString("longitude"));
                     poiInformation.put(ATTR_ALTITUDE, obj.getString("altitude"));
+                    poiInformation.put(ATTR_PICTURE, UPLOAD_PATH + "/" + obj.getString("picture"));
 
                     poiInformation.put(TARGET, target);
-                    targets.put(obj.getInt("id"), target);
 
                     pois.put(new JSONObject(poiInformation));
                 } catch (JSONException e) {
@@ -269,8 +271,8 @@ public class HuntingActivity extends AbstractArchitectActivity {
             poiInformation.put(ATTR_LATITUDE, String.valueOf(poiLocationLatLon[0]));
             poiInformation.put(ATTR_LONGITUDE, String.valueOf(poiLocationLatLon[1]));
             poiInformation.put(ATTR_ALTITUDE, String.valueOf(UNKNOWN_ALTITUDE));
-            poiInformation.put(TARGET, "http://s3-eu-west-1.amazonaws.com/web-api-hosting/jwtc/548d7175160a69d26dc51a7f/20150131/lL6ksyrm/target-collections.wtc");
-            targets.put(i, i + ".wtc");
+            poiInformation.put(TARGET, "http://s3-eu-west-1.amazonaws.com/web-api-hosting/jwtc/54a6a99e160a69d26dc51ad4/20150204/NCvpvFfo/target-collections.wtc");
+            poiInformation.put(ATTR_PICTURE, "http://ericwuendisch.de/restnode/server/uploads/b2QK17zHWmn37ivU9gTzoIBXgwy7KZD9.jpg");
             pois.put(new JSONObject(poiInformation));
         }
 

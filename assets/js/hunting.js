@@ -14,29 +14,34 @@ var TreasureHuntAR = {
      * @param poiDataServer data from Server
      */
     hunting: function (poiDataServer) {
-        // Disable all sensors in "IR-only" Worlds to save performance.
-        // If the property is set to true, any geo-related components (such as GeoObjects and ActionRanges) are active.
-        // If the property is set to false, any geo-related components will not be visible on the screen, and triggers will not fire.
-        // AR.context.services.sensors = false;
-
         var poiData = poiDataServer || [];
         var image = new AR.ImageDrawable(new AR.ImageResource('img/magnifier.png'), this.magnifierSize);
 
+        // Cola
+        //this.tracker = new AR.Tracker("target-collections.wtc", {
+        //    onLoaded: this.loadingStep
+        //});
+
         this.modelTreasure = new AR.Model("treasure.wt3", {
             scale: {
-                x: 0.045,
-                y: 0.045,
-                z: 0.045
+                x: 0.003,
+                y: 0.003,
+                z: 0.003
             },
             translate: {
-                x: 0.0,
-                y: 0.05,
-                z: 0.0
+                y: -0.05
             },
             rotate: {
-                roll: -25
+                tilt: -45
             }
         });
+
+        // Cola
+        //var trackable = new AR.Trackable2DObject(this.tracker, "*", {
+        //    drawables: {
+        //        cam: [this.modelTreasure]
+        //    }
+        //});
 
         // create geo objects
         for (var i = 0; i < poiData.length; i++) {
@@ -46,7 +51,7 @@ var TreasureHuntAR = {
                 parseFloat(poiData[i].altitude));
 
             var label = new AR.Label("distance", 1, {
-                offsetY: -this.magnifierSize / 2,
+                offsetY: -this.magnifierSize / 4,
                 verticalAnchor: AR.CONST.VERTICAL_ANCHOR.TOP,
                 opacity: 0.9,
                 enabled: false,
@@ -102,13 +107,14 @@ var TreasureHuntAR = {
         TreasureHuntAR.magnifierInVision.geoObject.drawables.addIndicatorDrawable(imageDrawable);
         document.location = "architectsdk://startHuntingMagnifier";
 
-        var actionRange = new AR.ActionRange(TreasureHuntAR.magnifierInVision.geoObject.locations[0], this.radius, {
+        console.log(TreasureHuntAR.magnifierInVision.geoObject.locations[0]);
+        var actionRange = new AR.ActionRange(TreasureHuntAR.magnifierInVision.geoObject.locations[0], TreasureHuntAR.radius, {
                 onEnter: TreasureHuntAR.inActionRange,
-                onExit: TreasureHuntAR.exitActionRange
+                onExit: TreasureHuntAR.stopHuntingTreasure
             }
         );
         // test
-        TreasureHuntAR.inActionRange()();
+        //TreasureHuntAR.inActionRange();
     },
 
     // User swiped down want to stop
@@ -169,31 +175,35 @@ var TreasureHuntAR = {
     },
 
     inActionRange: function () {
-        return function () {
-            // Disable all sensors in "IR-only" Worlds to save performance.
-            AR.context.services.sensors = false;
-            document.location = "architectsdk://startHuntingTreasure?id=" + TreasureHuntAR.magnifierInVision.poiData.id;
-            TreasureHuntAR.magnifierInVision.geoObject.enabled = false;
+        console.log("in Range");
+        // Disable all sensors in "IR-only" Worlds to save performance.
+        AR.context.services.sensors = false;
+        document.location = "architectsdk://startHuntingTreasure?id=" + TreasureHuntAR.magnifierInVision.poiData.id;
+        TreasureHuntAR.magnifierInVision.geoObject.enabled = false;
 
-            TreasureHuntAR.tracker = new AR.Tracker(TreasureHuntAR.magnifierInVision.poiData.target, {
-                onLoaded: TreasureHuntAR.loadingStep
-            });
-/*
-            // Similar to 2D content the 3D model is added to the drawables.cam property of an AR.Trackable2DObject.
-            var trackable = new AR.Trackable2DObject(TreasureHuntAR.tracker, "treasure", {
-                drawables: {
-                    cam: [TreasureHuntAR.modelTreasure]
-                }
-            }); */
-        }
+        TreasureHuntAR.tracker = new AR.Tracker(TreasureHuntAR.magnifierInVision.poiData.target, {
+            onLoaded: TreasureHuntAR.loadingStep
+        });
+        document.getElementById('hintImage').src = TreasureHuntAR.magnifierInVision.poiData.picture;
+        document.getElementById('hintImageWrapper').style.display = 'block';
+        /*
+         // Similar to 2D content the 3D model is added to the drawables.cam property of an AR.Trackable2DObject.
+         var trackable = new AR.Trackable2DObject(TreasureHuntAR.tracker, "treasure", {
+         drawables: {
+         cam: [TreasureHuntAR.modelTreasure]
+         }
+         }); */
     },
 
-    exitActionRange: function () {
-        return function () {
-            AR.context.services.sensors = true;
-            TreasureHuntAR.magnifierInVision.geoObject.enabled = true;
-            TreasureHuntAR.tracker.enabled = false;
+    stopHuntingTreasure: function () {
+        // enable all magnifier
+        for (var i = 0, l = TreasureHuntAR.magnifiersGeoObjects.length; i < l; i++) {
+            TreasureHuntAR.magnifiersGeoObjects[i].enabled = true;
         }
+
+        AR.context.services.sensors = true;
+        TreasureHuntAR.magnifierInVision.geoObject.enabled = true;
+        TreasureHuntAR.tracker.enabled = false;
     },
 
     loadingStep: function loadingStepFn() {
