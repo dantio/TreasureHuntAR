@@ -1,7 +1,7 @@
 var express = require('express'), // REST-App
     app = express(),
     bodyParser = require('body-parser'),
-    multer = require('multer')
+    multer = require('multer'),
     fs = require('fs'),
     TargetsAPI = require("./TargetsAPI.js"),
     sqlite3 = require('sqlite3').verbose(),
@@ -28,12 +28,10 @@ var IMAGE_URL = 'http://ericwuendisch.de/restnode/server/uploads/'; //remember t
 app.use(bodyParser.json({limit: LIMIT})); // for parsing application/json
 app.use(bodyParser.urlencoded({extended: true, limit: LIMIT})); // for parsing application/x-www-form-urlencoded
 app.use(multer({limit: LIMIT, size: LIMIT})); // for parsing multipart/form-data
-var host = null;
-var port = null;
 
 var server = app.listen(9999, function () {
-    host = server.address().address;
-    port = server.address().port;
+    var host = server.address().address;
+    var port = server.address().port;
     console.log('Server is listening at http://%s:%s', host, port)
 });
 var computeTargetImage = function (id, picture, callback) {
@@ -70,7 +68,6 @@ app.post('/cache64', function (req, res) {
 
             var picture = hash(32).toString();
             var newPath = __dirname + "/uploads/" +picture+".jpg";
-            console.log("http://" + host + ":" + port + "/" + newPath);
             fs.writeFile(newPath, new Buffer(req.body.file, "base64"), function(err) {
 
                 if (err) {
@@ -87,7 +84,7 @@ app.post('/cache64', function (req, res) {
                     var q = db.prepare('INSERT INTO cache (description, picture, latitude, longitude, altitude) VALUES ("' + description + '","' + picture + '.jpg",' + latitude + ',' + longitude + ',' + altitude + ')');
                         q.run(function(err){
                             if (err) throw err;
-                            computeTargetImage(this.lastID,  IMAGE_URL+"uploads/" +picture+".jpg", function (state) {
+                            computeTargetImage(this.lastID, "http://" + host + ":" + port + "/" + newPath, function (state) {
                                 if(state){
                                     res.send(200).send("Cool");
                                 }else{
