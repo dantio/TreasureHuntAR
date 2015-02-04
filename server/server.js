@@ -37,7 +37,7 @@ var server = app.listen(9999, function () {
 var computeTargetImage = function (id, picture, callback) {
     var IMAGE = IMAGE_URL + "" +picture;
     console.log(IMAGE);
-    API.convert(IMAGE, function (err, url) {
+    API.convert([IMAGE], function (err, url) {
         if (err) {
             console.log("Error: " + err);
             callback(false);
