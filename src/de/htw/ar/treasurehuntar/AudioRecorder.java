@@ -38,6 +38,9 @@ public class AudioRecorder extends Activity {
     private boolean isRecording = false;
     private boolean isPlaying = false;
 
+    private boolean isRecorded = false;
+    private boolean isFinished = false;
+
     protected void record(boolean start) {
         if (start) {
             if (!isRecording) {
@@ -86,11 +89,12 @@ public class AudioRecorder extends Activity {
             public boolean onGesture(Gesture gesture) {
                 if (gesture == Gesture.TAP) {
                     Log.i("gesture", "Tap");
-                    if (isRecording) {
+                    if (!isRecording && !isFinished && !isRecorded) {
                         record(true);
-                    } else if (!isPlaying) {
+                    } else if (!isPlaying && isRecorded) {
                         play(true);
-                    } else {
+                        isFinished = true;
+                    } else if (isFinished) {
                         finishWithResult();
                     }
                     return true;
@@ -158,6 +162,7 @@ public class AudioRecorder extends Activity {
 
             public void onFinish() {
                 mTimer.setText("Audio wurde aufgenommen!");
+                isRecorded = true;
                 record(false);
             }
         }.start();
@@ -186,22 +191,25 @@ public class AudioRecorder extends Activity {
 
         Toast.makeText(AudioRecorder.this, R.string.record_hint, Toast.LENGTH_SHORT).show();
 
-        ImageView imageView = new ImageView(this);
+
         mTimer = new TextView(this);
         mTimer.setText("Starte die Aufnahme");
         mTimer.setGravity(Gravity.RIGHT);
+
+        ImageView imageView = new ImageView(this);
         imageView.setBackgroundResource(R.drawable.record);
+
         RelativeLayout rl = new RelativeLayout(this);
         rl.setBackground(Drawable.createFromPath(mImagePath));
 
-        rl.addView(imageView,
-                new LinearLayout.LayoutParams(
-                        ViewGroup.LayoutParams.WRAP_CONTENT,
-                        ViewGroup.LayoutParams.WRAP_CONTENT,
-                        0));
+        rl.addView(imageView);
 
         // Add Timer
-        rl.addView(mTimer);
+        RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.WRAP_CONTENT,
+                RelativeLayout.LayoutParams.WRAP_CONTENT);
+        lp.addRule(RelativeLayout.RIGHT_OF, imageView.getId());
+        rl.addView(mTimer, lp);
 
         setContentView(rl);
         super.onCreate(icicle);

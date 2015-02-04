@@ -101,6 +101,7 @@ app.post('/cache64', function (req, res) {
 
 
 app.post('/cache', function (req, res) {
+    console.log(req.files);
 
     fs.readFile(req.files.thumbnail.path, function (err, data) {
         if (err) {

@@ -1,5 +1,7 @@
 package de.htw.ar.treasurehuntar;
 
+import android.util.Log;
+
 import java.io.BufferedReader;
 
 import java.io.File;
@@ -51,8 +53,6 @@ public class MultipartUtility {
         httpConn.setDoInput(true);
         httpConn.setRequestProperty("Content-Type",
                 "multipart/form-data; boundary=" + boundary);
-        httpConn.setRequestProperty("User-Agent", "CodeJava Agent");
-        httpConn.setRequestProperty("Test", "Bonjour");
         outputStream = httpConn.getOutputStream();
         writer = new PrintWriter(new OutputStreamWriter(outputStream, charset),
                 true);
@@ -144,6 +144,8 @@ public class MultipartUtility {
             String line = null;
             while ((line = reader.readLine()) != null) {
                 response.add(line);
+
+                Log.i("m", line);
             }
             reader.close();
             httpConn.disconnect();

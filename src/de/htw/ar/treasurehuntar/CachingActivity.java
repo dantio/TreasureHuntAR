@@ -17,7 +17,6 @@ import com.wikitude.architect.ArchitectView.ArchitectUrlListener;
 import com.wikitude.architect.ArchitectView.SensorAccuracyChangeListener;
 
 import java.io.File;
-import java.net.HttpURLConnection;
 import java.util.List;
 
 /**
@@ -29,7 +28,8 @@ public class CachingActivity extends AbstractArchitectActivity {
     private static final int TAKE_PICTURE_REQUEST = 1;
     private static final int TAKE_AUDIO_REQUEST = 2;
 
-    private final static String POST_CACHE_URL = "http://vegapunk.de:9999/cache";
+    //private final static String POST_CACHE_URL = "http://vegapunk.de:9999/cache";
+    private final static String POST_CACHE_URL = "http://192.168.0.75:9999/cache";
 
     /**
      * extras key for activity title, usually static and set in Manifest.xml
@@ -166,6 +166,7 @@ public class CachingActivity extends AbstractArchitectActivity {
             switch (requestCode) {
                 // First take a picure
                 case TAKE_PICTURE_REQUEST:
+                    Log.i("result", "apicture request");
                     String thumbnailPath = data.getStringExtra(Intents.EXTRA_THUMBNAIL_FILE_PATH);
                     Intent intent = new Intent(CachingActivity.this, AudioRecorder.class);
                     intent.putExtra("imgPath", thumbnailPath);
@@ -174,6 +175,7 @@ public class CachingActivity extends AbstractArchitectActivity {
 
                 // Record audio and send to server
                 case TAKE_AUDIO_REQUEST:
+                    Log.i("result", "audio request");
                     String audioPath = data.getStringExtra("audioPath");
                     String imgPath = data.getStringExtra("imgPath");
                     new SendFileCache().execute(imgPath, audioPath);
@@ -213,6 +215,7 @@ public class CachingActivity extends AbstractArchitectActivity {
                 System.out.println("SERVER REPLIED:");
 
             } catch (Exception e) {
+                e.printStackTrace();
             }
             return null;
         }
