@@ -60,6 +60,7 @@ public class CachingActivity extends AbstractArchitectActivity {
             .currentTimeMillis();
 
     private GestureDetector mGestureDetector;
+    private AudioRecorder myAudioRecorder;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -146,12 +147,19 @@ public class CachingActivity extends AbstractArchitectActivity {
                     Log.i("gesture", "Tap");
                     takePicture();
                     return true;
+                } else if (gesture == Gesture.SWIPE_RIGHT) {
+                    recordAudioMessage();
+                    return true;
                 }
                 return false;
             }
         });
 
         return gestureDetector;
+    }
+
+    private void recordAudioMessage() {
+        myAudioRecorder = new AudioRecorder();
     }
 
     private void takePicture() {
