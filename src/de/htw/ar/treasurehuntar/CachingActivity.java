@@ -2,14 +2,11 @@ package de.htw.ar.treasurehuntar;
 
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.hardware.SensorManager;
 import android.location.LocationListener;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.provider.MediaStore;
-import android.util.Base64;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.widget.Toast;
@@ -18,21 +15,9 @@ import com.google.android.glass.touchpad.Gesture;
 import com.google.android.glass.touchpad.GestureDetector;
 import com.wikitude.architect.ArchitectView.ArchitectUrlListener;
 import com.wikitude.architect.ArchitectView.SensorAccuracyChangeListener;
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.message.BasicNameValuePair;
-import org.json.JSONArray;
 
-import java.io.*;
+import java.io.File;
 import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -44,8 +29,7 @@ public class CachingActivity extends AbstractArchitectActivity {
     private static final int TAKE_PICTURE_REQUEST = 1;
     private static final int TAKE_AUDIO_REQUEST = 2;
 
-    private final static String POST_IMAGE_URL = "http://vegapunk.de:9999/cache64";
-    private final static String POST_AUDIO_URL = "http://vegapunk.de:9999/audio";
+    private final static String POST_CACHE_URL = "http://vegapunk.de:9999/cache";
 
     /**
      * extras key for activity title, usually static and set in Manifest.xml
@@ -192,15 +176,13 @@ public class CachingActivity extends AbstractArchitectActivity {
                 case TAKE_AUDIO_REQUEST:
                     String audioPath = data.getStringExtra("audioPath");
                     String imgPath = data.getStringExtra("imgPath");
-                    new SendAudioCache(audioPath).execute(POST_AUDIO_URL);
+                    new SendFileCache().execute(imgPath, audioPath);
                     break;
             }
         }
         super.onActivityResult(requestCode, resultCode, data);
     }
 
-
-   
 
     /**
      * Send file to server
@@ -210,97 +192,28 @@ public class CachingActivity extends AbstractArchitectActivity {
         private String imagePath;
         private String audioPath;
 
-        HttpURLConnection mUrlConnection;
-
-        String mResult;
-
         @Override
-        protected Void doInBackground(String... urls) {
-            imagePath = urls[0];
-            audioPath = urls[1];
+        protected Void doInBackground(String... paths) {
+            imagePath = paths[0];
+            audioPath = paths[1];
 
             try {
-                int serverResponseCode = 0;
-                File imageFile = new File(imagePath);
-                File audioFile = new File(audioPath);
-                DataOutputStream dos = null;
-                String lineEnd = "\r\n";
-                String twoHyphens = "--";
-                String boundary = "*****";
-                int bytesRead, bytesAvailable, bufferSize;
-                byte[] buffer;
-                int maxBufferSize = 1024 * 1024;
-                int REQUEST_SUCCESS_CODE = 200;
-                FileInputStream fileInputStream = new FileInputStream(imageFile);
-                URL url = new URL(POST_AUDIO_URL);
-                mUrlConnection = (HttpURLConnection) url.openConnection();
-                mUrlConnection.setRequestMethod("POST");
-                mUrlConnection.setRequestProperty("description", "Treasure-"); // TODO: Voice Recognition Text einfuegen
-                mUrlConnection.setRequestProperty("latitude", String.valueOf(lastKnownLocation.getLatitude()));
-                mUrlConnection.setRequestProperty("longitude", String.valueOf(lastKnownLocation.getLongitude()));
-                mUrlConnection.setRequestProperty("altitude",String.valueOf(lastKnownLocation.getAltitude()));
-                // write ImageData to Request
-                mUrlConnection.setRequestProperty("Content-Type", "multipart/form-data;boundary=" + boundary);
-                mUrlConnection.setRequestProperty("imageData", imageFile.getName());
-                dos = new DataOutputStream(mUrlConnection.getOutputStream());
-                dos.writeBytes(twoHyphens + boundary + lineEnd);
-                dos.writeBytes("Content-Disposition: form-data; name=Filedata;filename=" + imageFile.getName() +
-                        lineEnd);
-                dos.writeBytes(lineEnd);
-                bytesAvailable = fileInputStream.available();
-                bufferSize = Math.min(bytesAvailable, maxBufferSize);
-                buffer = new byte[bufferSize];
-                bytesRead = fileInputStream.read(buffer, 0, bufferSize);
-                while (bytesRead > 0) {
-                    dos.write(buffer, 0, bufferSize);
-                    bytesAvailable = fileInputStream.available();
-                    bufferSize = Math.min(bytesAvailable, maxBufferSize);
-                    bytesRead = fileInputStream.read(buffer, 0, bufferSize);
-                }
-                dos.writeBytes(lineEnd);
-                dos.writeBytes(twoHyphens + boundary + twoHyphens + lineEnd);
-                fileInputStream.close();
-                dos.close();
+                MultipartUtility multipart = new MultipartUtility(POST_CACHE_URL, "UTF-8");
 
-                // write Audio Data to Request
-                fileInputStream = new FileInputStream(audioFile);
-                mUrlConnection.setRequestProperty("Content-Type", "multipart/form-data;boundary=" + boundary);
-                mUrlConnection.setRequestProperty("audioData", audioFile.getName());
-                dos = new DataOutputStream(mUrlConnection.getOutputStream());
-                dos.writeBytes(twoHyphens + boundary + lineEnd);
-                dos.writeBytes("Content-Disposition: form-data; name=Filedata;filename=" + audioFile.getName() +
-                        lineEnd);
-                dos.writeBytes(lineEnd);
-                bytesAvailable = fileInputStream.available();
-                bufferSize = Math.min(bytesAvailable, maxBufferSize);
-                buffer = new byte[bufferSize];
-                bytesRead = fileInputStream.read(buffer, 0, bufferSize);
-                while (bytesRead > 0) {
-                    dos.write(buffer, 0, bufferSize);
-                    bytesAvailable = fileInputStream.available();
-                    bufferSize = Math.min(bytesAvailable, maxBufferSize);
-                    bytesRead = fileInputStream.read(buffer, 0, bufferSize);
-                }
-                dos.writeBytes(lineEnd);
-                dos.writeBytes(twoHyphens + boundary + twoHyphens + lineEnd);
-                fileInputStream.close();
-                dos.close();
+                multipart.addFormField("description", "Treasure-"); // TODO: Voice Recognition Text einfuegen
+                multipart.addFormField("latitude", String.valueOf(lastKnownLocation.getLatitude()));
+                multipart.addFormField("longitude", String.valueOf(lastKnownLocation.getLongitude()));
+                multipart.addFormField("altitude", String.valueOf(lastKnownLocation.getAltitude()));
 
-                // Responses from the server (code and message)
-                serverResponseCode = mUrlConnection.getResponseCode();
-                String serverResponseMessage = mUrlConnection.getResponseMessage();
-                if (serverResponseCode == REQUEST_SUCCESS_CODE) {
-                    InputStream is = mUrlConnection.getInputStream();
-                    int ch;
-                    StringBuffer b = new StringBuffer();
-                    while ((ch = is.read()) != -1) {
-                        b.append((char) ch);
-                    }
-                    final String uploadedFilename = b.toString();
-                    mResult = "uploaded file at http://www.morkout.com/glass/uploads/" + uploadedFilename;
-                    is.close();
-                }
-            } catch (Exception e) {}
+                multipart.addFilePart("Image", new File(imagePath));
+                multipart.addFilePart("Audio", new File(audioPath));
+
+                List<String> response = multipart.finish();
+
+                System.out.println("SERVER REPLIED:");
+
+            } catch (Exception e) {
+            }
             return null;
         }
     }
