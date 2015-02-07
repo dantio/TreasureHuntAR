@@ -10,10 +10,11 @@ import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.Environment;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.MotionEvent;
-import android.view.ViewGroup;
-import android.widget.*;
+import android.widget.ImageView;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
+import android.widget.Toast;
 import com.google.android.glass.touchpad.Gesture;
 import com.google.android.glass.touchpad.GestureDetector;
 
@@ -41,35 +42,6 @@ public class AudioRecorder extends Activity {
     private boolean isRecorded = false;
     private boolean isFinished = false;
 
-    protected void record(boolean start) {
-        if (start) {
-            if (!isRecording) {
-                startRecording();
-                isRecording = true;
-            }
-
-        } else {
-            if (isRecording) {
-                stopRecording();
-                isRecording = false;
-            }
-        }
-    }
-
-    protected void play(boolean start) {
-        if (start) {
-            if (!isPlaying) {
-                startPlaying();
-                isPlaying = true;
-            }
-        } else {
-            if (isPlaying) {
-                stopPlaying();
-                isPlaying = false;
-            }
-        }
-    }
-
     /**
      * Send generic motion events to the gesture detector
      *
@@ -90,9 +62,9 @@ public class AudioRecorder extends Activity {
                 if (gesture == Gesture.TAP) {
                     Log.i("gesture", "Tap");
                     if (!isRecording && !isFinished && !isRecorded) {
-                        record(true);
+                        startRecording();
                     } else if (!isPlaying && isRecorded) {
-                        play(true);
+                        startPlaying();
                         isFinished = true;
                     } else if (isFinished) {
                         finishWithResult();
@@ -100,9 +72,11 @@ public class AudioRecorder extends Activity {
                     return true;
                 } else if (gesture == Gesture.SWIPE_DOWN) {
                     if (isRecording) {
-                        record(false);
+                        stopRecording();
                     } else if (isPlaying) {
-                        play(false);
+                        stopPlaying();
+                    } else if(isFinished) {
+                        finish();
                     }
                 }
                 return false;
@@ -126,6 +100,7 @@ public class AudioRecorder extends Activity {
             mPlayer.setDataSource(mFileName);
             mPlayer.prepare();
             mPlayer.start();
+            isPlaying = true;
         } catch (IOException e) {
             Log.e("start", "prepare() failed");
         }
@@ -134,6 +109,7 @@ public class AudioRecorder extends Activity {
     private void stopPlaying() {
         mPlayer.release();
         mPlayer = null;
+        isPlaying = false;
     }
 
     private void startRecording() {
@@ -162,8 +138,7 @@ public class AudioRecorder extends Activity {
 
             public void onFinish() {
                 mTimer.setText("Audio wurde aufgenommen!");
-                isRecorded = true;
-                record(false);
+                stopRecording();
             }
         }.start();
     }
@@ -172,10 +147,7 @@ public class AudioRecorder extends Activity {
         mRecorder.stop();
         mRecorder.release();
         mRecorder = null;
-    }
-
-    protected String getPath() {
-        return mFileName;
+        isRecorded = true;
     }
 
     @Override
@@ -194,7 +166,6 @@ public class AudioRecorder extends Activity {
 
         mTimer = new TextView(this);
         mTimer.setText("Starte die Aufnahme");
-        mTimer.setGravity(Gravity.RIGHT);
 
         ImageView imageView = new ImageView(this);
         imageView.setBackgroundResource(R.drawable.record);
@@ -208,8 +179,9 @@ public class AudioRecorder extends Activity {
         RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(
                 RelativeLayout.LayoutParams.WRAP_CONTENT,
                 RelativeLayout.LayoutParams.WRAP_CONTENT);
-        lp.addRule(RelativeLayout.RIGHT_OF, imageView.getId());
-        rl.addView(mTimer, lp);
+        lp.setMargins(0, 200, 0, 0);
+        mTimer.setLayoutParams(lp);
+        rl.addView(mTimer);
 
         setContentView(rl);
         super.onCreate(icicle);

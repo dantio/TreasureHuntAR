@@ -169,12 +169,6 @@ public class HuntingActivity extends AbstractArchitectActivity {
 
         final JSONArray pois = new JSONArray();
 
-        // equals "AR.CONST.UNKNOWN_ALTITUDE" in JavaScript (compare AR.GeoLocation specification)
-        // Use "AR.CONST.UNKNOWN_ALTITUDE" to tell ARchitect that altitude of places should be on user level.
-        // Be aware to handle altitude properly in locationManager in case you use valid POI altitude
-        // value (e.g. pass altitude only if GPS accuracy is <7m).
-        final float UNKNOWN_ALTITUDE = -32768f;
-
         // ensure these attributes are also used in JavaScript when extracting POI data
         final String ATTR_ID = "id";
         final String ATTR_NAME = "name";

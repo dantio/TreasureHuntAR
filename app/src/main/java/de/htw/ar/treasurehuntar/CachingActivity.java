@@ -3,7 +3,6 @@ package de.htw.ar.treasurehuntar;
 import android.content.Context;
 import android.content.Intent;
 import android.hardware.SensorManager;
-import android.location.LocationListener;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.provider.MediaStore;
@@ -15,9 +14,15 @@ import com.google.android.glass.touchpad.Gesture;
 import com.google.android.glass.touchpad.GestureDetector;
 import com.wikitude.architect.ArchitectView.ArchitectUrlListener;
 import com.wikitude.architect.ArchitectView.SensorAccuracyChangeListener;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.apache.http.entity.mime.content.StringBody;
+import org.apache.http.impl.client.DefaultHttpClient;
 
 import java.io.File;
-import java.util.List;
 
 /**
  * Schätze verstecken
@@ -29,7 +34,7 @@ public class CachingActivity extends AbstractArchitectActivity {
     private static final int TAKE_AUDIO_REQUEST = 2;
 
     //private final static String POST_CACHE_URL = "http://vegapunk.de:9999/cache";
-    private final static String POST_CACHE_URL = "http://192.168.0.75:9999/cache";
+    public final static String POST_CACHE_URL = "http://192.168.2.107:9999/cache";
 
     /**
      * extras key for activity title, usually static and set in Manifest.xml

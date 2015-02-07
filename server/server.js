@@ -27,7 +27,10 @@ var IMAGE_URL = 'http://ericwuendisch.de/restnode/server/uploads/'; //remember t
 
 app.use(bodyParser.json({limit: LIMIT})); // for parsing application/json
 app.use(bodyParser.urlencoded({extended: true, limit: LIMIT})); // for parsing application/x-www-form-urlencoded
-app.use(multer({limit: LIMIT, size: LIMIT})); // for parsing multipart/form-data
+app.use(multer({limit: LIMIT, size: LIMIT, dest: './uploads/',
+    onFileUploadStart: function (file) {
+        console.log(file.fieldname + ' is starting ...')
+    }})); // for parsing multipart/form-data
 
 var server = app.listen(9999, function () {
     var host = server.address().address;
@@ -101,9 +104,8 @@ app.post('/cache64', function (req, res) {
 
 
 app.post('/cache', function (req, res) {
-    console.log(req.files);
 
-    fs.readFile(req.files.thumbnail.path, function (err, data) {
+    fs.readFile(req.files.Image.path, function (err, data) {
         if (err) {
             //res.send(404).send("Nope");
         } else {

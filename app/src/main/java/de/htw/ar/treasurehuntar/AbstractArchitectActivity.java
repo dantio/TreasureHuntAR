@@ -31,6 +31,14 @@ import java.io.IOException;
 public abstract class AbstractArchitectActivity extends FragmentActivity {
 
     /**
+     * equals "AR.CONST.UNKNOWN_ALTITUDE" in JavaScript (compare AR.GeoLocation specification)
+     * Use "AR.CONST.UNKNOWN_ALTITUDE" to tell ARchitect that altitude of places should be on user level.
+     * Be aware to handle altitude properly in locationManager in case you use valid POI altitude
+     * value (e.g. pass altitude only if GPS accuracy is <7m).
+     */
+    public static final float UNKNOWN_ALTITUDE = -32768f;
+
+    /**
      * extras key for architect-url to load, usually already known upfront, can be relative folder to assets (myWorld.html --> assets/myWorld.html is loaded) or web-url ("http://myserver.com/myWorld.html"). Note that argument passing is only possible via web-url
      */
     protected static final String EXTRAS_KEY_ACTIVITY_ARCHITECT_WORLD_URL = "activityArchitectWorldUrl";

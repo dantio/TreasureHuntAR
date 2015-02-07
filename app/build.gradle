@@ -28,5 +28,5 @@ android {
 apply plugin: 'android-unit-test'
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
+    compile fileTree(include: ['*.jar'], dir: 'libs')
 }
