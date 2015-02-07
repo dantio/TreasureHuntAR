@@ -8,7 +8,7 @@ import java.util.List;
  * Created by Daniil on 07.02.2015.
  */
 public class MultipartUploadTest {
-    public static void main(String[] argv) throws IOException {
+    public static void main(String[] argv) throws Exception {
 
         MultipartUtility multipart = new MultipartUtility(CachingActivity.POST_CACHE_URL, "UTF-8");
 
@@ -20,6 +20,9 @@ public class MultipartUploadTest {
         multipart.addFilePart("Image", new File("src/main/assets/img/a92750e25e.jpg"));
         multipart.addFilePart("Audio", new File("src/main/assets/img/a92750e25e.jpg"));
 
-        List<String> response = multipart.finish();
+        String response = multipart.getResponse();
+
+        System.out.println(response);
+
     }
 }

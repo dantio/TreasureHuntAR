@@ -104,7 +104,8 @@ app.post('/cache64', function (req, res) {
 
 
 app.post('/cache', function (req, res) {
-
+    console.log(req.files);
+    console.log(req.body);
     fs.readFile(req.files.Image.path, function (err, data) {
         if (err) {
             //res.send(404).send("Nope");

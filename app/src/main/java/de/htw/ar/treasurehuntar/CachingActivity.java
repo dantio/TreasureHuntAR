@@ -14,15 +14,9 @@ import com.google.android.glass.touchpad.Gesture;
 import com.google.android.glass.touchpad.GestureDetector;
 import com.wikitude.architect.ArchitectView.ArchitectUrlListener;
 import com.wikitude.architect.ArchitectView.SensorAccuracyChangeListener;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.mime.MultipartEntityBuilder;
-import org.apache.http.entity.mime.content.StringBody;
-import org.apache.http.impl.client.DefaultHttpClient;
 
 import java.io.File;
+import java.util.List;
 
 /**
  * Schätze verstecken
@@ -204,7 +198,7 @@ public class CachingActivity extends AbstractArchitectActivity {
                 multipart.addFilePart("Image", new File(imagePath));
                 multipart.addFilePart("Audio", new File(audioPath));
 
-                List<String> response = multipart.finish();
+                String response = multipart.getResponse();
 
                 System.out.println("SERVER REPLIED:");
 
