@@ -1,13 +1,14 @@
 package de.htw.ar.treasurehuntar;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.List;
 
 /**
  * Created by Daniil on 07.02.2015.
  */
 public class MultipartUploadTest {
-    public static void main(String[] argv) {
+    public static void main(String[] argv) throws IOException {
 
         MultipartUtility multipart = new MultipartUtility(CachingActivity.POST_CACHE_URL, "UTF-8");
 
@@ -16,8 +17,8 @@ public class MultipartUploadTest {
         multipart.addFormField("longitude", "13.243977");
         multipart.addFormField("altitude", String.valueOf(AbstractArchitectActivity.UNKNOWN_ALTITUDE));
 
-        multipart.addFilePart("Image", new File(imagePath));
-        multipart.addFilePart("Audio", new File(audioPath));
+        multipart.addFilePart("Image", new File("src/main/assets/img/a92750e25e.jpg"));
+        multipart.addFilePart("Audio", new File("src/main/assets/img/a92750e25e.jpg"));
 
         List<String> response = multipart.finish();
     }
