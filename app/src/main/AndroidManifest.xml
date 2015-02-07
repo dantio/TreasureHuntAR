@@ -49,8 +49,8 @@
             android:xlargeScreens="true"/>
 
     <uses-sdk
-            android:minSdkVersion="19"
-            android:targetSdkVersion="19"/>
+            android:minSdkVersion="18"
+            android:targetSdkVersion="18"/>
 
     <!-- set debuggable="true" to enable debugging for Android 4.4+ -->
     <application
@@ -58,7 +58,10 @@
             android:icon="@drawable/ic_launcher"
             android:label="@string/app_name"
             >
-
+        <uses-library android:name="android.test.runner" />
+        <instrumentation
+                android:name="android.test.InstrumentationTestRunner"
+                android:targetPackage="de.htw.ar.treasurehuntar"/>
         <activity
                 android:name="de.htw.ar.treasurehuntar.MainActivityGoogleGlass"
                 android:label="@string/app_name" android:exported="true">

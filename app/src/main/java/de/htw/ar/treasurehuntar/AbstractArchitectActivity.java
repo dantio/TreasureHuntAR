@@ -2,17 +2,21 @@ package de.htw.ar.treasurehuntar;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.Context;
 import android.content.pm.ApplicationInfo;
+import android.hardware.SensorManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.media.AudioManager;
-import android.opengl.GLES20;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.v4.app.FragmentActivity;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.WindowManager;
 import android.webkit.WebView;
 import android.widget.Toast;
+import com.google.android.glass.touchpad.GestureDetector;
 import com.wikitude.architect.ArchitectView;
 import com.wikitude.architect.ArchitectView.ArchitectConfig;
 import com.wikitude.architect.ArchitectView.ArchitectUrlListener;
@@ -24,7 +28,7 @@ import java.io.IOException;
  * Abstract activity which handles live-cycle events.
  * Feel free to extend from this activity when setting up your own AR-Activity
  */
-public abstract class AbstractArchitectActivity extends Activity {
+public abstract class AbstractArchitectActivity extends FragmentActivity {
 
     /**
      * extras key for architect-url to load, usually already known upfront, can be relative folder to assets (myWorld.html --> assets/myWorld.html is loaded) or web-url ("http://myserver.com/myWorld.html"). Note that argument passing is only possible via web-url
@@ -67,12 +71,17 @@ public abstract class AbstractArchitectActivity extends Activity {
     protected ArchitectUrlListener urlListener;
 
     /**
-     * sets maximum distance to render places. In case your places are more than 50km away from the user you must adjust this value (compare 'AR.context.scene.cullingDistance').
-     * Return ArchitectViewHolder.CULLING_DISTANCE_DEFAULT_METERS to not change default behavior (50km range) or any positive float to set cullingDistance on architectView start.
-     *
-     * @return
+     * radius in m
      */
-    public abstract float getInitialCullingDistanceMeters();
+    public static final int MAX_RADIUS = 2000;
+
+    /**
+     * last time the calibration toast was shown, this avoids too many toast shown when compass needs calibration
+     */
+    private long lastCalibrationToastShownTimeMillis = System
+            .currentTimeMillis();
+
+    protected GestureDetector mGestureDetector;
 
     /**
      * Called when the activity is first created.
@@ -92,6 +101,8 @@ public abstract class AbstractArchitectActivity extends Activity {
 
         Log.i("architect", "create");
 
+        mGestureDetector = createGestureDetector(this);
+
         //
         // this enables remote debugging of a WebView on Android 4.4+ when debugging = true in AndroidManifest.xml
         // If you get a compile time error here, ensure to have SDK 19+ used in your ADT/Eclipse.
@@ -100,18 +111,18 @@ public abstract class AbstractArchitectActivity extends Activity {
         //
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
             if (0
-                != (getApplicationInfo().flags &= ApplicationInfo.FLAG_DEBUGGABLE)) {
+                    != (getApplicationInfo().flags &= ApplicationInfo.FLAG_DEBUGGABLE)) {
                 WebView.setWebContentsDebuggingEnabled(true);
             }
         }
 
         // set AR-view for life-cycle notifications etc.
         this.architectView = (ArchitectView) this
-            .findViewById(this.getArchitectViewId());
+                .findViewById(this.getArchitectViewId());
 
         // pass SDK key if you have one, this one is only valid for this package identifier and must not be used somewhere else
         final ArchitectConfig config = new ArchitectConfig(
-            this.getWikitudeSDKLicenseKey());
+                this.getWikitudeSDKLicenseKey());
 
         try {
             // first mandatory life-cycle notification
@@ -119,9 +130,9 @@ public abstract class AbstractArchitectActivity extends Activity {
         } catch (RuntimeException rex) {
             this.architectView = null;
             Toast.makeText(getApplicationContext(),
-                "can't create Architect View", Toast.LENGTH_SHORT).show();
+                    "can't create Architect View", Toast.LENGTH_SHORT).show();
             Log.e(this.getClass().getName(),
-                "Exception in ArchitectView.onCreate()", rex);
+                    "Exception in ArchitectView.onCreate()", rex);
         }
 
         // set accuracy listener if implemented, you may e.g. show calibration prompt for compass using this listener
@@ -140,7 +151,7 @@ public abstract class AbstractArchitectActivity extends Activity {
 
             @Override
             public void onStatusChanged(String provider, int status,
-                Bundle extras) {
+                                        Bundle extras) {
             }
 
             @Override
@@ -159,22 +170,22 @@ public abstract class AbstractArchitectActivity extends Activity {
                     // sore last location as member, in case it is needed somewhere (in e.g. your adjusted project)
                     AbstractArchitectActivity.this.lastKnownLocation = location;
                     if (AbstractArchitectActivity.this.architectView
-                        != null) {
+                            != null) {
                         // check if location has altitude at certain accuracy level & call right architect method (the one with altitude information)
                         if (location.hasAltitude() && location.hasAccuracy()
-                            && location.getAccuracy() < 7) {
+                                && location.getAccuracy() < 7) {
                             AbstractArchitectActivity.this.architectView
-                                .setLocation(location.getLatitude(),
-                                    location.getLongitude(),
-                                    location.getAltitude(),
-                                    location.getAccuracy());
+                                    .setLocation(location.getLatitude(),
+                                            location.getLongitude(),
+                                            location.getAltitude(),
+                                            location.getAccuracy());
                         } else {
                             AbstractArchitectActivity.this.architectView
-                                .setLocation(location.getLatitude(),
-                                    location.getLongitude(),
-                                    location.hasAccuracy() ?
-                                        location.getAccuracy() :
-                                        1000);
+                                    .setLocation(location.getLatitude(),
+                                            location.getLongitude(),
+                                            location.hasAccuracy() ?
+                                                    location.getAccuracy() :
+                                                    1000);
                         }
                     }
                 }
@@ -182,7 +193,15 @@ public abstract class AbstractArchitectActivity extends Activity {
         };
 
         // locationProvider used to fetch user position
-        this.locationProvider = getLocationProvider(this.locationListener);
+        this.locationProvider = new LocationProvider(this, this.locationListener);
+    }
+
+    /*
+     * Send generic motion events to the gesture detector
+     */
+    @Override
+    public boolean onGenericMotionEvent(MotionEvent event) {
+        return mGestureDetector != null && mGestureDetector.onMotionEvent(event);
     }
 
     @Override
@@ -199,8 +218,7 @@ public abstract class AbstractArchitectActivity extends Activity {
                 this.architectView.load(this.getARchitectWorldPath());
 
                 // set the culling distance - meaning: the maximum distance to render geo-content
-                this.architectView.setCullingDistance(
-                    this.getInitialCullingDistanceMeters());
+                this.architectView.setCullingDistance(MAX_RADIUS);
 
             } catch (IOException e1) {
                 e1.printStackTrace();
@@ -219,7 +237,7 @@ public abstract class AbstractArchitectActivity extends Activity {
             // register accuracy listener in architectView, if set
             if (this.sensorAccuracyListener != null) {
                 this.architectView.registerSensorAccuracyChangeListener(
-                    this.sensorAccuracyListener);
+                        this.sensorAccuracyListener);
             }
         }
 
@@ -240,7 +258,7 @@ public abstract class AbstractArchitectActivity extends Activity {
             // unregister accuracy listener in architectView, if set
             if (this.sensorAccuracyListener != null) {
                 this.architectView.unregisterSensorAccuracyChangeListener(
-                    this.sensorAccuracyListener);
+                        this.sensorAccuracyListener);
             }
         }
 
@@ -274,15 +292,42 @@ public abstract class AbstractArchitectActivity extends Activity {
     }
 
     /**
+     * Gestuure detecttion
+     *
+     * @param context
+     * @return
+     */
+    protected abstract GestureDetector createGestureDetector(Context context);
+
+    public SensorAccuracyChangeListener getSensorAccuracyListener() {
+        return new SensorAccuracyChangeListener() {
+            @Override
+            public void onCompassAccuracyChanged(int accuracy) {
+                /* UNRELIABLE = 0, LOW = 1, MEDIUM = 2, HIGH = 3 */
+                if (accuracy < SensorManager.SENSOR_STATUS_ACCURACY_MEDIUM
+                        && isFinishing() && System.currentTimeMillis()
+                        - lastCalibrationToastShownTimeMillis
+                        > 5 * 1000) {
+                    Toast.makeText(AbstractArchitectActivity.this,
+                            R.string.compass_accuracy_low, Toast.LENGTH_LONG)
+                            .show();
+                    lastCalibrationToastShownTimeMillis = System
+                            .currentTimeMillis();
+                }
+            }
+        };
+    }
+
+    /**
      * title shown in activity
      *
      * @return
      */
     public String getActivityTitle() {
         return (getIntent().getExtras() != null && getIntent().getExtras().get(
-            EXTRAS_KEY_ACTIVITY_TITLE_STRING) != null) ? getIntent()
-            .getExtras().getString(EXTRAS_KEY_ACTIVITY_TITLE_STRING)
-            : "Test-World";
+                EXTRAS_KEY_ACTIVITY_TITLE_STRING) != null) ? getIntent()
+                .getExtras().getString(EXTRAS_KEY_ACTIVITY_TITLE_STRING)
+                : "Test-World";
     }
 
     /**
@@ -292,7 +337,7 @@ public abstract class AbstractArchitectActivity extends Activity {
      */
     public String getARchitectWorldPath() {
         return getIntent().getExtras().getString(
-            EXTRAS_KEY_ACTIVITY_ARCHITECT_WORLD_URL);
+                EXTRAS_KEY_ACTIVITY_ARCHITECT_WORLD_URL);
     }
 
     /**
@@ -324,24 +369,13 @@ public abstract class AbstractArchitectActivity extends Activity {
     }
 
     /**
-     * @return Implementation of a Location
-     */
-    public abstract LocationProvider getLocationProvider(
-        final LocationListener locationListener);
-
-    /**
-     * @return Implementation of Sensor-Accuracy-Listener. That way you can e.g. show prompt to calibrate compass
-     */
-    public abstract ArchitectView.SensorAccuracyChangeListener getSensorAccuracyListener();
-
-    /**
      * call JavaScript in architectView
      *
      * @param methodName
      * @param arguments
      */
     protected void callJavaScript(final String methodName,
-        final String[] arguments) {
+                                  final String[] arguments) {
         final StringBuilder argumentsString = new StringBuilder("");
         for (int i = 0; i < arguments.length; i++) {
             argumentsString.append(arguments[i]);
@@ -352,10 +386,11 @@ public abstract class AbstractArchitectActivity extends Activity {
 
         if (this.architectView != null) {
             final String js = (methodName + "( " + argumentsString.toString()
-                + " );");
+                    + " );");
             this.architectView.callJavascript(js);
         }
     }
+
     /**
      * call JavaScript in architectView
      *

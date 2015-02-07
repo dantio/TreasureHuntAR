@@ -114,18 +114,7 @@ public class CachingActivity extends AbstractArchitectActivity {
     }
 
     @Override
-    public LocationProvider getLocationProvider(
-            final LocationListener locationListener) {
-        return new LocationProvider(this, locationListener);
-    }
-
-    @Override
-    public float getInitialCullingDistanceMeters() {
-        // you need to adjust this in case your POIs are more than 50km away from user here while loading or in JS code (compare 'AR.context.scene.cullingDistance')
-        return 50;
-    }
-
-    private GestureDetector createGestureDetector(Context context) {
+    protected GestureDetector createGestureDetector(Context context) {
         GestureDetector gestureDetector = new GestureDetector(context);
         //Create a base listener for generic gestures
         gestureDetector.setBaseListener(new GestureDetector.BaseListener() {

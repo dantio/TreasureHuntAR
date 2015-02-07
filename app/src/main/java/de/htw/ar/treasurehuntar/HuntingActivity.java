@@ -2,17 +2,14 @@ package de.htw.ar.treasurehuntar;
 
 import android.content.Context;
 import android.content.res.Resources;
-import android.hardware.SensorManager;
 import android.location.LocationListener;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.MotionEvent;
 import android.widget.Toast;
 import com.google.android.glass.touchpad.Gesture;
 import com.google.android.glass.touchpad.GestureDetector;
 import com.wikitude.architect.ArchitectView.ArchitectUrlListener;
-import com.wikitude.architect.ArchitectView.SensorAccuracyChangeListener;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -25,24 +22,31 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.ExecutionException;
 
 /**
  * Schätze finden
  */
 public class HuntingActivity extends AbstractArchitectActivity {
 
-    protected JSONArray poiData;
-
-    protected boolean isLoadingCaches = false;
-    protected boolean isLoadingTarget = false;
-
-    // Endpoints http://ericwuendisch.de/restnode/server/uploads/
+    // Endpoints
     public static final String ALL_CACHES = "http://www.vegapunk.de:9999/caches";
     public static final String UPLOAD_PATH = "http://ericwuendisch.de/restnode/server/uploads/";
 
-    // User go for magnifier
+    protected JSONArray poiData;
+
+    // States
+    protected boolean isLoadingCaches = false;
+    protected boolean isLoadingTarget = false;
+
+    public boolean isHuntingMagnifier = false;
+    public boolean isHuntingTreasure = false;
+
+    // Treasure to hunt
+    public int huntingTreasureId = -1;
+
+    // Magnifier Actions
     public static final String ACTION_START_HUNTING_MAGNIFIER = "startHuntingMagnifier";
     public static final String ACTION_STOP_HUNTING_MAGNIFIER = "stopHuntingMagnifier";
 
@@ -50,38 +54,16 @@ public class HuntingActivity extends AbstractArchitectActivity {
     public static final String ACTION_START_HUNTING_TREASURE = "startHuntingTreasure";
     public static final String ACTION_STOP_HUNTING_TREASURE = "stopHuntingTreasure";
 
-    // State
-    public boolean isHuntingMagnifier = false;
-    public boolean isHuntingTreasure = false;
-
-    // Treasure to hunt
-    public int huntingTreasureId = -1;
-
-    /**
-     * radius in m
-     */
-    public static final int MAX_RADIUS = 2000;
-
-    /**
-     * max tresures
-     */
+    // Min treasuress
     public static final int MIN_TRESURES = 1;
-
-    /**
-     * last time the calibration toast was shown, this avoids too many toast shown when compass needs calibration
-     */
-    private long lastCalibrationToastShownTimeMillis = System
-            .currentTimeMillis();
-
-    private GestureDetector mGestureDetector;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
-        mGestureDetector = createGestureDetector(this);
         super.onCreate(savedInstanceState);
     }
 
-    private GestureDetector createGestureDetector(Context context) {
+    @Override
+    protected GestureDetector createGestureDetector(Context context) {
         GestureDetector gestureDetector = new GestureDetector(context);
         gestureDetector.setBaseListener(new GestureDetector.BaseListener() {
             @Override
@@ -129,7 +111,6 @@ public class HuntingActivity extends AbstractArchitectActivity {
         return new ArchitectUrlListener() {
             @Override
             public boolean urlWasInvoked(String uriString) {
-
                 // TODO Uri uri = new Uri("uriString");
                 // starts with "architectsdk://"
                 String action = uriString.substring("architectsdk://".length());
@@ -150,58 +131,32 @@ public class HuntingActivity extends AbstractArchitectActivity {
         };
     }
 
-    /*
-     * Send generic motion events to the gesture detector
-     */
-    @Override
-    public boolean onGenericMotionEvent(MotionEvent event) {
-        return mGestureDetector != null && mGestureDetector.onMotionEvent(event);
-    }
-
-    @Override
-    public SensorAccuracyChangeListener getSensorAccuracyListener() {
-        return new SensorAccuracyChangeListener() {
-            @Override
-            public void onCompassAccuracyChanged(int accuracy) {
-                /* UNRELIABLE = 0, LOW = 1, MEDIUM = 2, HIGH = 3 */
-                if (accuracy < SensorManager.SENSOR_STATUS_ACCURACY_MEDIUM
-                        && HuntingActivity.this != null && !HuntingActivity.this
-                        .isFinishing() && System.currentTimeMillis()
-                        - HuntingActivity.this.lastCalibrationToastShownTimeMillis
-                        > 5 * 1000) {
-                    Toast.makeText(HuntingActivity.this,
-                            R.string.compass_accuracy_low, Toast.LENGTH_LONG)
-                            .show();
-                    HuntingActivity.this.lastCalibrationToastShownTimeMillis = System
-                            .currentTimeMillis();
-                }
-            }
-        };
-    }
-
-    @Override
-    public LocationProvider getLocationProvider(
-            final LocationListener locationListener) {
-        return new LocationProvider(this, locationListener);
-    }
-
-    @Override
-    public float getInitialCullingDistanceMeters() {
-        return MAX_RADIUS;
-    }
-
-
     @Override
     protected void onPostCreate(final Bundle savedInstanceState) {
         super.onPostCreate(savedInstanceState);
         loadCache();
-        //loadTreasureData(0);
     }
 
-    protected void loadCache() {
+    /**
+     * Load all caches from server
+     */
+    private void loadCache() {
         if (!isLoadingCaches) {
             Log.i("load", "Load all caches");
             new LoadCaches().execute(ALL_CACHES);
+        }
+    }
+
+    /**
+     * Get cache From server
+     * @return
+     */
+    public JSONArray getPoiData() {
+        try {
+            return new LoadCaches().execute(ALL_CACHES).get();
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+            return null;
         }
     }
 
