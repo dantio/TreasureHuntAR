@@ -4,5 +4,6 @@
 /.idea/libraries
 .DS_Store
 /build
-/server/node_module
+/server/node_modules
 /server/npm-debug.log
+/server/uploads
