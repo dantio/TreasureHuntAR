@@ -195,8 +195,8 @@ public class CachingActivity extends AbstractArchitectActivity {
                 multipart.addFormField("longitude", String.valueOf(lastKnownLocation.getLongitude()));
                 multipart.addFormField("altitude", String.valueOf(lastKnownLocation.getAltitude()));
 
-                multipart.addFilePart("Image", new File(imagePath));
-                multipart.addFilePart("Audio", new File(audioPath));
+                multipart.addFilePart("image", new File(imagePath));
+                multipart.addFilePart("audio", new File(audioPath));
 
                 String response = multipart.getResponse();
 

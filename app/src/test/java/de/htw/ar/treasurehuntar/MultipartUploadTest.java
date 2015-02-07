@@ -17,8 +17,8 @@ public class MultipartUploadTest {
         multipart.addFormField("longitude", "13.243977");
         multipart.addFormField("altitude", String.valueOf(AbstractArchitectActivity.UNKNOWN_ALTITUDE));
 
-        multipart.addFilePart("Image", new File("src/main/assets/img/a92750e25e.jpg"));
-        multipart.addFilePart("Audio", new File("src/main/assets/img/a92750e25e.jpg"));
+        multipart.addFilePart("image", new File("src/main/assets/img/a92750e25e.jpg"));
+        multipart.addFilePart("audio", new File("src/main/assets/img/a92750e25e.jpg"));
 
         String response = multipart.getResponse();
 

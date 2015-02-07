@@ -6,22 +6,18 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 
 /**
- * This utility class provides an abstraction layer for sending multipart HTTP
- * POST requests to a web server.
- *
- * @author www.codejava.net
+ * @author Daniil Tomilow
  */
 public class MultipartUtility {
 
     private final String delimiter = "--";
     // creates a unique boundary based on time stamp
-    private final String boundary = "----" + System.currentTimeMillis();
+    private final String boundary = "----MPGL" + System.currentTimeMillis();
 
     private static final byte[] LINE_END = "\r\n".getBytes();
     private HttpURLConnection con;
     private String charset;
     private OutputStream os;
-    private PrintWriter writer;
 
     /**
      * This constructor initializes a new HTTP POST request with content type
