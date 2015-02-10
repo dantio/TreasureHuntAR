@@ -95,10 +95,5 @@
     <orderEntry type="library" exported="" name="wikitudesdk" level="project" />
     <orderEntry type="library" exported="" scope="TEST" name="android-support-v4" level="project" />
     <orderEntry type="library" exported="" scope="TEST" name="wikitudesdk" level="project" />
-    <orderEntry type="library" name="libs" level="project" />
-    <orderEntry type="library" name="httpclient-4.4" level="project" />
-    <orderEntry type="library" name="httpmime-4.4" level="project" />
-    <orderEntry type="library" exported="" scope="TEST" name="android-support-v4" level="project" />
-    <orderEntry type="library" exported="" scope="TEST" name="wikitudesdk" level="project" />
   </component>
 </module>
