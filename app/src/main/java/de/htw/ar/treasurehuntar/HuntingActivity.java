@@ -130,6 +130,11 @@ public class HuntingActivity extends AbstractArchitectActivity {
                     int treasureId = Integer.parseInt(idString);
                     Log.i(ACTION_START_HUNTING_TREASURE, "" + treasureId);
 
+                    Toast.makeText(
+                            HuntingActivity.this,
+                            R.string.hunting_play, Toast.LENGTH_SHORT)
+                            .show();
+
                 }
 
                 return false;
@@ -170,6 +175,7 @@ public class HuntingActivity extends AbstractArchitectActivity {
         final String ATTR_LONGITUDE = "longitude";
         final String ATTR_ALTITUDE = "altitude";
         final String ATTR_PICTURE = "picture";
+        final String ATTR_AUDIO = "audio";
         final String TARGET = "target";
 
         if (js != null) {
@@ -189,6 +195,7 @@ public class HuntingActivity extends AbstractArchitectActivity {
                     poiInformation.put(ATTR_LONGITUDE, obj.getString("longitude"));
                     poiInformation.put(ATTR_ALTITUDE, obj.getString("altitude"));
                     poiInformation.put(ATTR_PICTURE, UPLOAD_PATH + obj.getString("picture"));
+                    poiInformation.put(ATTR_AUDIO, UPLOAD_PATH + obj.getString("audio"));
 
                     poiInformation.put(TARGET, target);
 
@@ -213,6 +220,7 @@ public class HuntingActivity extends AbstractArchitectActivity {
             poiInformation.put(ATTR_LATITUDE, String.valueOf(poiLocationLatLon[0]));
             poiInformation.put(ATTR_LONGITUDE, String.valueOf(poiLocationLatLon[1]));
             poiInformation.put(ATTR_ALTITUDE, String.valueOf(UNKNOWN_ALTITUDE));
+            poiInformation.put(ATTR_AUDIO, "");
             poiInformation.put(TARGET, "http://s3-eu-west-1.amazonaws.com/web-api-hosting/jwtc/54a6a99e160a69d26dc51ad4/20150204/NCvpvFfo/target-collections.wtc");
             poiInformation.put(ATTR_PICTURE, "http://ericwuendisch.de/restnode/server/uploads/b2QK17zHWmn37ivU9gTzoIBXgwy7KZD9.jpg");
             pois.put(new JSONObject(poiInformation));

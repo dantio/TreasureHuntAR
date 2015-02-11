@@ -12,6 +12,8 @@
     <string name="record_hint">Nehmen sie eine Botschaft auf!</string>
     <string name="record_finish">Botschaft wurde aufgenohmen!</string>
 
+    <string name="hunting_play">[TAP] um die Botschaft abzuspielen</string>
+
     <string name="upload_fail">Schatz konnte nicht versteckt werden...</string>
     <string name="upload_ok">Schatz wurde versteckt</string>
 

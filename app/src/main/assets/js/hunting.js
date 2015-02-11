@@ -17,11 +17,6 @@ var TreasureHuntAR = {
         var poiData = poiDataServer || [];
         var image = new AR.ImageDrawable(new AR.ImageResource('img/magnifier.png'), this.magnifierSize);
 
-        // Cola
-        //this.tracker = new AR.Tracker("target-collections.wtc", {
-        //    onLoaded: this.loadingStep
-        //});
-
         this.modelTreasure = new AR.Model("treasure.wt3", {
             scale: {
                 x: 0.003,
@@ -35,13 +30,6 @@ var TreasureHuntAR = {
                 tilt: -45
             }
         });
-
-        // Cola
-        //var trackable = new AR.Trackable2DObject(this.tracker, "*", {
-        //    drawables: {
-        //        cam: [this.modelTreasure]
-        //    }
-        //});
 
         // create geo objects
         for (var i = 0; i < poiData.length; i++) {
@@ -80,7 +68,10 @@ var TreasureHuntAR = {
         //AR.radar.container = document.getElementById("radarContainer");
         //AR.radar.enabled = true;
     },
-    // User tapped and want to hunt a treasure
+
+    /**
+     * User tapped and want to hunt a treasure
+     */
     startHuntingMagnifier: function () {
         // no magnifier
         if (this.huntingMode || TreasureHuntAR.magnifierInVision == null) {
@@ -117,7 +108,9 @@ var TreasureHuntAR = {
         TreasureHuntAR.inActionRange();
     },
 
-    // User swiped down want to stop
+    /**
+     * User swiped down want to stop
+     */
     stopHuntingMagnifier: function () {
         if (!TreasureHuntAR.huntingMode) {
             return;
@@ -182,22 +175,27 @@ var TreasureHuntAR = {
         // Disable all sensors in "IR-only" Worlds to save performance.
         AR.context.services.sensors = false;
         document.location = "architectsdk://startHuntingTreasure?id=" + TreasureHuntAR.magnifierInVision.poiData.id;
-        // Hide megnifier
+        // Hide magnifier
         TreasureHuntAR.magnifierInVision.geoObject.enabled = false;
 
         console.log("Tracker: " + TreasureHuntAR.magnifierInVision.poiData.target);
         TreasureHuntAR.tracker = new AR.Tracker(TreasureHuntAR.magnifierInVision.poiData.target, {
-            onLoaded: TreasureHuntAR.loadingStep
+            onLoaded: function () {
+                console.log("Tracker loaded");
+            }
         });
+
+        console.log("Picture TreasureHuntAR.magnifierInVision.poiData.picture");
+
         document.getElementById('hintImage').src = TreasureHuntAR.magnifierInVision.poiData.picture;
         document.getElementById('hintImageWrapper').style.display = 'block';
-        /*
-         // Similar to 2D content the 3D model is added to the drawables.cam property of an AR.Trackable2DObject.
-         var trackable = new AR.Trackable2DObject(TreasureHuntAR.tracker, "treasure", {
-         drawables: {
-         cam: [TreasureHuntAR.modelTreasure]
-         }
-         }); */
+
+        // Similar to 2D content the 3D model is added to the drawables.cam property of an AR.Trackable2DObject.
+        var trackable = new AR.Trackable2DObject(TreasureHuntAR.tracker, "treasure", {
+            drawables: {
+                cam: [TreasureHuntAR.modelTreasure]
+            }
+        });
     },
 
     stopHuntingTreasure: function () {
@@ -214,30 +212,20 @@ var TreasureHuntAR = {
     playAudio: function () {
         console.log("Play Audio: " + TreasureHuntAR.magnifierInVision.poiData.audio);
 
-        var sound = new AR.Sound(TreasureHuntAR.magnifierInVision.poiData.audio, {
-            onLoaded: function () {
-                sound.play();
-            },
-            onError: function () {
-                // alert the user that the sound file could not be loaded
-            }
-        });
-    },
+        if (!TreasureHuntAR.magnifierInVision.poiData.sound) {
+            TreasureHuntAR.magnifierInVision.poiData.sound = new AR.Sound(TreasureHuntAR.magnifierInVision.poiData.audio, {
+                onLoaded: function () {
+                    console.log("audio play");
+                    TreasureHuntAR.magnifierInVision.poiData.sound.play();
+                },
+                onError: function () {
+                    console.log("audio error");
+                }
+            });
 
-    loadingStep: function loadingStepFn() {
-        if (!TreasureHuntAR.loaded && TreasureHuntAR.tracker.isLoaded() && TreasureHuntAR.modelTreasure.isLoaded()) {
-            TreasureHuntAR.loaded = true;
-            var cssDivLeft = " style='display: table-cell;vertical-align: middle; text-align: right; width: 50%; padding-right: 15px;'";
-            var cssDivRight = " style='display: table-cell;vertical-align: middle; text-align: left;'";
-            document.getElementById('loadingMessage').innerHTML =
-                "<div" + cssDivLeft + ">Scan CarAd Tracker Image:</div>";
-            //+ "<div" + cssDivRight + "><img src='assets/car.png'></img></div>";
-
-            // Remove Scan target message after 10 sec.
-            setTimeout(function () {
-                var e = document.getElementById('loadingMessage');
-                e.parentElement.removeChild(e);
-            }, 10000);
+            TreasureHuntAR.magnifierInVision.poiData.sound.load()
         }
+
+        TreasureHuntAR.magnifierInVision.poiData.sound.play();
     }
 };

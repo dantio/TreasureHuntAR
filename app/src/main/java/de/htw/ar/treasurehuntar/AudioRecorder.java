@@ -67,6 +67,7 @@ public class AudioRecorder extends Activity {
                         startPlaying();
                         isFinished = true;
                     } else if (isFinished) {
+                        mTimer.setText("[TAP] um den Cache zu verstecken");
                         finishWithResult();
                     }
                     return true;
@@ -159,10 +160,10 @@ public class AudioRecorder extends Activity {
         Intent intent = getIntent();
         mImagePath = intent.getStringExtra("imgPath");
         String fileName = mImagePath.substring(mImagePath.lastIndexOf("/"), mImagePath.lastIndexOf("."));
-        mFileName += fileName;
+        mFileName += fileName + ".3gp";
 
-        Log.i("record", mImagePath);
-        Log.i("record", mFileName);
+        Log.i("record - image path", mImagePath);
+        Log.i("record - audio path", mFileName);
 
         Toast.makeText(AudioRecorder.this, R.string.record_hint, Toast.LENGTH_SHORT).show();
 
