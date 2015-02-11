@@ -59,20 +59,24 @@ var computeTargetImage = function (id, picture, callback) {
 };
 
 var convertAudio = function (name){
-	ace.exec({
-        inputDir: './uploads/',
+    ace.exec({
+        inputDir: './uploads',
         inputFormat: '3gp',
-        outputDir: './uploads/',
+        outputDir: './uploads',
         outputFormat: 'mp3',
+        ingnoreFileNamesContain: [],
         createArtistAlbumDirs: false,
+        copyWithoutMetadata: true,
         bitrate: '256k',
+	overwrite: true,
         log: {
             inputFormat: false
         }
     });
 
+
     ace.on('done', function () {
-        console.log("ace done");
+        console.log("file " + name + " successfully converted to mp3");
         fs.unlinkSync('./uploads/'+ name);
     });
 }
@@ -88,11 +92,12 @@ app.post('/cache', function (req, res) {
     var data = {
         $description: req.body.description.toString(),
         $picture: req.files.image.name.toString(),
-        $audio: req.files.audio.name.toString(),
-        $latitude: req.body.latitude.replace(',', '.'),
+        $audio: req.files.audio.name.toString().replace('.3gp', '.mp3'),
+	    $latitude: req.body.latitude.replace(',', '.'),
         $longitude: req.body.longitude.replace(',', '.'),
         $altitude: req.body.altitude.replace(',', '.')
     };
+
 
     var q = db.prepare('INSERT INTO cache (description, picture, audio, latitude, longitude, altitude)'
     + ' VALUES ($description, $picture, $audio, $latitude, $longitude, $altitude)', data);
@@ -102,13 +107,13 @@ app.post('/cache', function (req, res) {
         var lastId = this.lastID;
         computeTargetImage(lastId, data.$picture, function (state) {
             if (state) {
-		convertAudio(data.$audio);
+		convertAudio(req.files.audio.name.toString());
                 res.send(200);
             } else {
                 // Delte from DB
                 db.run('DELETE FROM cache WHERE id = ?', lastId);
                 // Remove from FS
-                fs.unlinkSync('./uploads/' + data.$audio);
+                fs.unlinkSync('./uploads/' + req.files.audio.name.toString());
                 fs.unlinkSync('./uploads/' + data.$picture);
                 res.send(404);
             }
