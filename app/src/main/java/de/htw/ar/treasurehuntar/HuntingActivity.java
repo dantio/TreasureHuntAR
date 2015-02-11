@@ -49,6 +49,7 @@ public class HuntingActivity extends AbstractArchitectActivity {
     // Magnifier Actions
     public static final String ACTION_START_HUNTING_MAGNIFIER = "startHuntingMagnifier";
     public static final String ACTION_STOP_HUNTING_MAGNIFIER = "stopHuntingMagnifier";
+    public static final String ACTION_PLAY_AUDIO = "playAudio";
 
     // User is in magnifier action range and start hunting treasure
     public static final String ACTION_START_HUNTING_TREASURE = "startHuntingTreasure";
@@ -71,8 +72,13 @@ public class HuntingActivity extends AbstractArchitectActivity {
                 switch (gesture) {
                     case TAP:
                         if (!isHuntingMagnifier && !isHuntingTreasure) {
-                            Log.i("gesture", "Tap");
+                            Log.i("gesture", ACTION_START_HUNTING_MAGNIFIER);
                             callJavaScript("TreasureHuntAR." + ACTION_START_HUNTING_MAGNIFIER);
+                        }
+                        // Play audio file
+                        else if(isHuntingTreasure) {
+                            Log.i("gesture", ACTION_PLAY_AUDIO);
+                            callJavaScript("TreasureHuntAR." + ACTION_PLAY_AUDIO);
                         }
                         return true;
                     case SWIPE_DOWN:
@@ -148,19 +154,6 @@ public class HuntingActivity extends AbstractArchitectActivity {
     }
 
     /**
-     * Get cache From server
-     * @return
-     */
-    public JSONArray getPoiData() {
-        try {
-            return new LoadCaches().execute(ALL_CACHES).get();
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-    /**
      * loads poiInformation and returns them as JSONArray. Ensure attributeNames of JSON POIs are well known in JavaScript, so you can parse them easily
      *
      * @return POI information in JSONArray
@@ -195,7 +188,7 @@ public class HuntingActivity extends AbstractArchitectActivity {
                     poiInformation.put(ATTR_LATITUDE, obj.getString("latitude"));
                     poiInformation.put(ATTR_LONGITUDE, obj.getString("longitude"));
                     poiInformation.put(ATTR_ALTITUDE, obj.getString("altitude"));
-                    poiInformation.put(ATTR_PICTURE, UPLOAD_PATH + "/" + obj.getString("picture"));
+                    poiInformation.put(ATTR_PICTURE, UPLOAD_PATH + obj.getString("picture"));
 
                     poiInformation.put(TARGET, target);
 

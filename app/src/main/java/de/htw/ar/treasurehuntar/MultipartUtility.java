@@ -100,11 +100,12 @@ public class MultipartUtility {
         finishMultipart();
 
         InputStream is = con.getInputStream();
-        byte[] b1 = new byte[1024];
+        byte[] bytes = new byte[1024];
         StringBuilder builder = new StringBuilder();
 
-        while (is.read(b1) != -1) {
-            builder.append(new String(b1));
+        int numRead;
+        while ((numRead = is.read(bytes)) != -1) {
+            builder.append(new String(bytes, 0, numRead));
         }
 
         con.disconnect();

@@ -130,14 +130,15 @@ public class AudioRecorder extends Activity {
         }
         mRecorder.start();
 
-        new CountDownTimer(5000, 1000) {
+        new CountDownTimer(6000, 1000) {
 
             public void onTick(long millisUntilFinished) {
                 mTimer.setText("noch " + millisUntilFinished / 1000 + " sek");
             }
 
             public void onFinish() {
-                mTimer.setText("Audio wurde aufgenommen!");
+                Toast.makeText(AudioRecorder.this, R.string.record_finish, Toast.LENGTH_SHORT).show();
+                mTimer.setText("[TAP] um die Botschaft abzuspielen");
                 stopRecording();
             }
         }.start();
@@ -163,9 +164,8 @@ public class AudioRecorder extends Activity {
 
         Toast.makeText(AudioRecorder.this, R.string.record_hint, Toast.LENGTH_SHORT).show();
 
-
         mTimer = new TextView(this);
-        mTimer.setText("Starte die Aufnahme");
+        mTimer.setText("[TAP] um die Aufnahme zu starten");
 
         ImageView imageView = new ImageView(this);
         imageView.setBackgroundResource(R.drawable.record);
@@ -179,7 +179,7 @@ public class AudioRecorder extends Activity {
         RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(
                 RelativeLayout.LayoutParams.WRAP_CONTENT,
                 RelativeLayout.LayoutParams.WRAP_CONTENT);
-        lp.setMargins(0, 200, 0, 0);
+        lp.setMargins(0, 300, 0, 0);
         mTimer.setLayoutParams(lp);
         rl.addView(mTimer);
 

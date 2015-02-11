@@ -174,13 +174,18 @@ var TreasureHuntAR = {
         label.enabled = false;
     },
 
+    /**
+     * If user is in action range of magnifier, start hunting treasure
+     */
     inActionRange: function () {
         console.log("in Range");
         // Disable all sensors in "IR-only" Worlds to save performance.
         AR.context.services.sensors = false;
         document.location = "architectsdk://startHuntingTreasure?id=" + TreasureHuntAR.magnifierInVision.poiData.id;
+        // Hide megnifier
         TreasureHuntAR.magnifierInVision.geoObject.enabled = false;
 
+        console.log("Tracker: " + TreasureHuntAR.magnifierInVision.poiData.target);
         TreasureHuntAR.tracker = new AR.Tracker(TreasureHuntAR.magnifierInVision.poiData.target, {
             onLoaded: TreasureHuntAR.loadingStep
         });
@@ -204,6 +209,19 @@ var TreasureHuntAR = {
         AR.context.services.sensors = true;
         TreasureHuntAR.magnifierInVision.geoObject.enabled = true;
         TreasureHuntAR.tracker.enabled = false;
+    },
+
+    playAudio: function () {
+        console.log("Play Audio: " + TreasureHuntAR.magnifierInVision.poiData.audio);
+
+        var sound = new AR.Sound(TreasureHuntAR.magnifierInVision.poiData.audio, {
+            onLoaded: function () {
+                sound.play();
+            },
+            onError: function () {
+                // alert the user that the sound file could not be loaded
+            }
+        });
     },
 
     loadingStep: function loadingStepFn() {

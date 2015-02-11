@@ -5,7 +5,8 @@ var express = require('express'), // REST-App
     fs = require('fs'),
     TargetsAPI = require("./TargetsAPI.js"),
     sqlite3 = require('sqlite3').verbose(),
-    db = new sqlite3.Database('treasureHuntAR.db');
+    db = new sqlite3.Database('treasureHuntAR.db'),
+    ace = require('audio-convert-export');
 
 var API_TOKEN = "8baa3a2cac6df74b3a0154a062b8b1e5",
     API_VERSION = 2,
@@ -57,12 +58,37 @@ var computeTargetImage = function (id, picture, callback) {
     });
 };
 
+var convertAudio = function (name){
+	ace.exec({
+        inputDir: './uploads/',
+        inputFormat: '3gp',
+        outputDir: './uploads/',
+        outputFormat: 'mp3',
+        createArtistAlbumDirs: false,
+        bitrate: '256k',
+        log: {
+            inputFormat: false
+        }
+    });
+
+    ace.on('done', function () {
+        console.log("ace done");
+        fs.unlinkSync('./uploads/'+ name);
+    });
+}
+
 app.post('/cache', function (req, res) {
+   // audio and image
+   if(req.files.length < 2) {
+	console.error("we need two files");
+   	res.send(404);
+	return;
+   }
 
     var data = {
         $description: req.body.description.toString(),
-        $picture: req.files.image.originalname.toString(),
-        $audio: req.files.audio.originalname.toString(),
+        $picture: req.files.image.name.toString(),
+        $audio: req.files.audio.name.toString(),
         $latitude: req.body.latitude.replace(',', '.'),
         $longitude: req.body.longitude.replace(',', '.'),
         $altitude: req.body.altitude.replace(',', '.')
@@ -76,13 +102,14 @@ app.post('/cache', function (req, res) {
         var lastId = this.lastID;
         computeTargetImage(lastId, data.$picture, function (state) {
             if (state) {
+		convertAudio(data.$audio);
                 res.send(200);
             } else {
                 // Delte from DB
                 db.run('DELETE FROM cache WHERE id = ?', lastId);
                 // Remove from FS
-                fs.unlinkSync(req.files.image.path);
-                fs.unlinkSync(req.files.audio.path);
+                fs.unlinkSync('./uploads/' + data.$audio);
+                fs.unlinkSync('./uploads/' + data.$picture);
                 res.send(404);
             }
         });

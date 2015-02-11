@@ -14,6 +14,7 @@ import com.google.android.glass.touchpad.Gesture;
 import com.google.android.glass.touchpad.GestureDetector;
 import com.wikitude.architect.ArchitectView.ArchitectUrlListener;
 import com.wikitude.architect.ArchitectView.SensorAccuracyChangeListener;
+import org.json.JSONArray;
 
 import java.io.File;
 import java.util.List;
@@ -27,8 +28,8 @@ public class CachingActivity extends AbstractArchitectActivity {
     private static final int TAKE_PICTURE_REQUEST = 1;
     private static final int TAKE_AUDIO_REQUEST = 2;
 
-    //private final static String POST_CACHE_URL = "http://vegapunk.de:9999/cache";
-    public final static String POST_CACHE_URL = "http://192.168.2.107:9999/cache";
+    private final static String POST_CACHE_URL = "http://vegapunk.de:9999/cache";
+    //public final static String POST_CACHE_URL = "http://192.168.2.107:9999/cache";
 
     /**
      * extras key for activity title, usually static and set in Manifest.xml
@@ -177,13 +178,13 @@ public class CachingActivity extends AbstractArchitectActivity {
     /**
      * Send file to server
      */
-    class SendFileCache extends AsyncTask<String, Void, Void> {
+    class SendFileCache extends AsyncTask<String, Void, String> {
 
         private String imagePath;
         private String audioPath;
 
         @Override
-        protected Void doInBackground(String... paths) {
+        protected String doInBackground(String... paths) {
             imagePath = paths[0];
             audioPath = paths[1];
 
@@ -198,15 +199,26 @@ public class CachingActivity extends AbstractArchitectActivity {
                 multipart.addFilePart("image", new File(imagePath));
                 multipart.addFilePart("audio", new File(audioPath));
 
-                String response = multipart.getResponse();
-
-                System.out.println("SERVER REPLIED:");
+                return multipart.getResponse();
 
             } catch (Exception e) {
                 e.printStackTrace();
             }
+
             return null;
         }
+
+
+        @Override
+        protected void onPostExecute(String result) {
+            Log.i("SendFileChace ", "Post execute " + result);
+            if (result == null) {
+                Toast.makeText(CachingActivity.this, R.string.upload_fail, Toast.LENGTH_SHORT).show();
+            } else if (result.equals("200")) {
+                Toast.makeText(CachingActivity.this, R.string.upload_ok, Toast.LENGTH_SHORT).show();
+            }
+        }
+
     }
 }
 

@@ -10,7 +10,10 @@
     <string name="get_treasure">Schatz wird vorbereitet...</string>
     <string name="treasure_hunt">Schatzsuche!</string>
     <string name="record_hint">Nehmen sie eine Botschaft auf!</string>
+    <string name="record_finish">Botschaft wurde aufgenohmen!</string>
 
+    <string name="upload_fail">Schatz konnte nicht versteckt werden...</string>
+    <string name="upload_ok">Schatz wurde versteckt</string>
 
     <string name="main_title_urlLauncher">Launch World via url</string>
     <string name="compass_accuracy_low">Please re-calibrate compass by waving your device in a figure 8 motion.</string>
