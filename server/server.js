@@ -58,7 +58,7 @@ var computeTargetImage = function (id, picture, callback) {
     });
 };
 
-var convertAudio = function (name){
+var convertAudio = function (name) {
     ace.exec({
         inputDir: './uploads',
         inputFormat: '3gp',
@@ -68,7 +68,7 @@ var convertAudio = function (name){
         createArtistAlbumDirs: false,
         copyWithoutMetadata: true,
         bitrate: '256k',
-	overwrite: true,
+        overwrite: true,
         log: {
             inputFormat: false
         }
@@ -77,23 +77,23 @@ var convertAudio = function (name){
 
     ace.on('done', function () {
         console.log("file " + name + " successfully converted to mp3");
-        fs.unlinkSync('./uploads/'+ name);
+        fs.unlinkSync('./uploads/' + name);
     });
 }
 
 app.post('/cache', function (req, res) {
-   // audio and image
-   if(req.files.length < 2) {
-	console.error("we need two files");
-   	res.send(404);
-	return;
-   }
+    // audio and image
+    if (req.files.length < 2) {
+        console.error("we need two files");
+        res.send(404);
+        return;
+    }
 
     var data = {
         $description: req.body.description.toString(),
         $picture: req.files.image.name.toString(),
         $audio: req.files.audio.name.toString().replace('.3gp', '.mp3'),
-	    $latitude: req.body.latitude.replace(',', '.'),
+        $latitude: req.body.latitude.replace(',', '.'),
         $longitude: req.body.longitude.replace(',', '.'),
         $altitude: req.body.altitude.replace(',', '.')
     };
@@ -107,7 +107,7 @@ app.post('/cache', function (req, res) {
         var lastId = this.lastID;
         computeTargetImage(lastId, data.$picture, function (state) {
             if (state) {
-		convertAudio(req.files.audio.name.toString());
+                convertAudio(req.files.audio.name.toString());
                 res.send(200);
             } else {
                 // Delte from DB
