@@ -154,13 +154,15 @@ public class AudioRecorder extends Activity {
     @Override
     public void onCreate(Bundle icicle) {
         mFileName = Environment.getExternalStorageDirectory().getAbsolutePath();
-        mFileName += "/AudioRecorder.3gp";
         mGestureDetector = createGestureDetector(this);
 
         Intent intent = getIntent();
         mImagePath = intent.getStringExtra("imgPath");
+        String fileName = mImagePath.substring(mImagePath.lastIndexOf("/"), mImagePath.lastIndexOf("."));
+        mFileName += fileName;
 
         Log.i("record", mImagePath);
+        Log.i("record", mFileName);
 
         Toast.makeText(AudioRecorder.this, R.string.record_hint, Toast.LENGTH_SHORT).show();
 
