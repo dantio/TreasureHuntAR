@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">TreasureHuntAR</string>
-    <string name="app_voice_command">Tresure HuntAR</string>
+    <string name="app_voice_command">Treasure HuntAR</string>
 
     <string name="caching_title">Schätze verstecken</string>
     <string name="hunting_title">Schätze suchen</string>
@@ -13,6 +13,7 @@
     <string name="record_finish">Botschaft wurde aufgenohmen!</string>
 
     <string name="hunting_play">[TAP] um die Botschaft abzuspielen</string>
+    <string name="found_treasure">Glückwunsch! Sie haben den Schatz geefunden!</string>
 
     <string name="upload_fail">Schatz konnte nicht versteckt werden...</string>
     <string name="upload_ok">Schatz wurde versteckt</string>

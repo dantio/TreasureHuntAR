@@ -1,4 +1,5 @@
 var TreasureHuntAR = {
+    currentLocation: null,
     loaded: false,
     magnifiers: {}, // { id, poiData, geoObject }
     magnifiersGeoObjects: [], // array of geoObject
@@ -9,6 +10,10 @@ var TreasureHuntAR = {
     tracker: null,
     modelTreasure: null, // 3d treasur model
 
+    onLocationChanged: function(latitude, longitude, altitude, accuracy) {
+        console.log("onLocationChanged");
+        this.currentLocation = new AR.GeoLocation(latitude, longitude, altitude);
+    },
     /**
      * Called in HuntingActivity
      * @param poiDataServer data from Server
@@ -17,7 +22,7 @@ var TreasureHuntAR = {
         var poiData = poiDataServer || [];
         var image = new AR.ImageDrawable(new AR.ImageResource('img/magnifier.png'), this.magnifierSize);
 
-        this.modelTreasure = new AR.Model("treasure.wt3", {
+       this.modelTreasure = new AR.Model("treasure.wt3", {
             scale: {
                 x: 0.003,
                 y: 0.003,
@@ -69,6 +74,11 @@ var TreasureHuntAR = {
         //AR.radar.enabled = true;
     },
 
+    restartHunting: function () {
+        delete TreasureHuntAR.magnifierInVision;
+        TreasureHuntAR.magnifierInVision = null;
+    },
+
     /**
      * User tapped and want to hunt a treasure
      */
@@ -98,14 +108,20 @@ var TreasureHuntAR = {
         TreasureHuntAR.magnifierInVision.geoObject.drawables.addIndicatorDrawable(imageDrawable);
         document.location = "architectsdk://startHuntingMagnifier";
 
-        console.log(TreasureHuntAR.magnifierInVision.geoObject.locations[0]);
+        console.log("set action area");
         var actionRange = new AR.ActionRange(TreasureHuntAR.magnifierInVision.geoObject.locations[0], TreasureHuntAR.radius, {
                 onEnter: TreasureHuntAR.inActionRange,
                 onExit: TreasureHuntAR.stopHuntingTreasure
             }
         );
-        // test
-        TreasureHuntAR.inActionRange();
+
+
+
+        if(this.currentLocation != null && actionRange.isInArea(this.currentLocation)) {
+            console.log("in Area");
+            TreasureHuntAR.inActionRange();
+        }
+        console.log("check action area");
     },
 
     /**
@@ -125,10 +141,12 @@ var TreasureHuntAR = {
         this.huntingMode = false;
     },
 
+
+
     inVision: function (poi) {
         return function () {
             if (!TreasureHuntAR.huntingMode) {
-                if (TreasureHuntAR.magnifierInVision != null) {
+                if (TreasureHuntAR.magnifierInVision != null && !TreasureHuntAR.magnifierInVision.poiData.found) {
                     // FIXME "Uncaught TypeError: Cannot read property '0' of undefined"
                     var userDistance1 = TreasureHuntAR.magnifierInVision.geoObject.locations[0].distanceToUser();
                     var userDistance2 = poi.geoObject.locations[0].distanceToUser();
@@ -171,10 +189,10 @@ var TreasureHuntAR = {
      * If user is in action range of magnifier, start hunting treasure
      */
     inActionRange: function () {
-        console.log("in Range");
+        console.log("in Action Range");
         // Disable all sensors in "IR-only" Worlds to save performance.
         AR.context.services.sensors = false;
-        document.location = "architectsdk://startHuntingTreasure?id=" + TreasureHuntAR.magnifierInVision.poiData.id;
+        document.location = "architectsdk://startHuntingTreasure";
         // Hide magnifier
         TreasureHuntAR.magnifierInVision.geoObject.enabled = false;
 
@@ -185,15 +203,19 @@ var TreasureHuntAR = {
             }
         });
 
-        console.log("Picture TreasureHuntAR.magnifierInVision.poiData.picture");
+        console.log("Picture" + TreasureHuntAR.magnifierInVision.poiData.picture);
 
         document.getElementById('hintImage').src = TreasureHuntAR.magnifierInVision.poiData.picture;
         document.getElementById('hintImageWrapper').style.display = 'block';
 
         // Similar to 2D content the 3D model is added to the drawables.cam property of an AR.Trackable2DObject.
-        var trackable = new AR.Trackable2DObject(TreasureHuntAR.tracker, "treasure", {
+        var trackable = new AR.Trackable2DObject(TreasureHuntAR.tracker, "*", {
             drawables: {
                 cam: [TreasureHuntAR.modelTreasure]
+            },
+            onEnterFieldOfVision: function () {
+                console.log("in see treasure");
+                document.location = "architectsdk://foundTreasure?id=" + TreasureHuntAR.magnifierInVision.poiData.id;
             }
         });
     },
@@ -229,3 +251,5 @@ var TreasureHuntAR = {
         TreasureHuntAR.magnifierInVision.poiData.sound.play();
     }
 };
+
+AR.context.onLocationChanged = TreasureHuntAR.onLocationChanged;

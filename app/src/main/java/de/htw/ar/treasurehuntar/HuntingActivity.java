@@ -42,18 +42,21 @@ public class HuntingActivity extends AbstractArchitectActivity {
 
     public boolean isHuntingMagnifier = false;
     public boolean isHuntingTreasure = false;
+    public boolean isFoundTreasure = false;
 
     // Treasure to hunt
     public int huntingTreasureId = -1;
 
-    // Magnifier Actions
+    // JavaScript functions
     public static final String ACTION_START_HUNTING_MAGNIFIER = "startHuntingMagnifier";
     public static final String ACTION_STOP_HUNTING_MAGNIFIER = "stopHuntingMagnifier";
     public static final String ACTION_PLAY_AUDIO = "playAudio";
+    public static final String ACTION_RESTART_HUNTING = "restartHunting";
 
     // User is in magnifier action range and start hunting treasure
     public static final String ACTION_START_HUNTING_TREASURE = "startHuntingTreasure";
     public static final String ACTION_STOP_HUNTING_TREASURE = "stopHuntingTreasure";
+    public static final String ACTION_FOUND_TREASURE = "foundTreasure";
 
     // Min treasuress
     public static final int MIN_TRESURES = 1;
@@ -76,11 +79,15 @@ public class HuntingActivity extends AbstractArchitectActivity {
                             callJavaScript("TreasureHuntAR." + ACTION_START_HUNTING_MAGNIFIER);
                         }
                         // Play audio file
-                        else if(isHuntingTreasure) {
+                        else if (isHuntingTreasure) {
                             Log.i("gesture", ACTION_PLAY_AUDIO);
                             callJavaScript("TreasureHuntAR." + ACTION_PLAY_AUDIO);
+                        } else if (isFoundTreasure) {
+                            isFoundTreasure = false;
+                            callJavaScript("TreasureHuntAR." + ACTION_RESTART_HUNTING);
                         }
                         return true;
+
                     case SWIPE_DOWN:
                         Log.i("gesture", "Swipe Down");
                         if (isHuntingMagnifier) {
@@ -120,10 +127,16 @@ public class HuntingActivity extends AbstractArchitectActivity {
                 // TODO Uri uri = new Uri("uriString");
                 // starts with "architectsdk://"
                 String action = uriString.substring("architectsdk://".length());
-                if (action.startsWith(ACTION_START_HUNTING_MAGNIFIER)) {
+                if (action.equals(ACTION_START_HUNTING_MAGNIFIER)) {
                     isHuntingMagnifier = true;
-                } else if (action.startsWith(ACTION_START_HUNTING_TREASURE)) {
+                } else if (action.equals(ACTION_START_HUNTING_TREASURE)) {
                     isHuntingTreasure = true;
+                    Toast.makeText(
+                            HuntingActivity.this,
+                            R.string.hunting_play, Toast.LENGTH_SHORT)
+                            .show();
+                } else if (action.startsWith(ACTION_FOUND_TREASURE)) {
+
                     String idString = action.substring(
                             ACTION_START_HUNTING_TREASURE.length() + "?id="
                                     .length());
@@ -132,9 +145,13 @@ public class HuntingActivity extends AbstractArchitectActivity {
 
                     Toast.makeText(
                             HuntingActivity.this,
-                            R.string.hunting_play, Toast.LENGTH_SHORT)
+                            R.string.found_treasure, Toast.LENGTH_SHORT)
                             .show();
 
+                    isHuntingTreasure = false;
+                    isHuntingMagnifier = false;
+                    callJavaScript("TreasureHuntAR." + ACTION_STOP_HUNTING_TREASURE);
+                    callJavaScript("TreasureHuntAR." + ACTION_STOP_HUNTING_MAGNIFIER);
                 }
 
                 return false;
@@ -176,6 +193,7 @@ public class HuntingActivity extends AbstractArchitectActivity {
         final String ATTR_ALTITUDE = "altitude";
         final String ATTR_PICTURE = "picture";
         final String ATTR_AUDIO = "audio";
+        final String ATTR_FOUND = "found";
         final String TARGET = "target";
 
         if (js != null) {
@@ -196,6 +214,7 @@ public class HuntingActivity extends AbstractArchitectActivity {
                     poiInformation.put(ATTR_ALTITUDE, obj.getString("altitude"));
                     poiInformation.put(ATTR_PICTURE, UPLOAD_PATH + obj.getString("picture"));
                     poiInformation.put(ATTR_AUDIO, UPLOAD_PATH + obj.getString("audio"));
+                    poiInformation.put(ATTR_FOUND, "false");
 
                     poiInformation.put(TARGET, target);
 
@@ -221,6 +240,7 @@ public class HuntingActivity extends AbstractArchitectActivity {
             poiInformation.put(ATTR_LONGITUDE, String.valueOf(poiLocationLatLon[1]));
             poiInformation.put(ATTR_ALTITUDE, String.valueOf(UNKNOWN_ALTITUDE));
             poiInformation.put(ATTR_AUDIO, "");
+            poiInformation.put(ATTR_FOUND, "false");
             poiInformation.put(TARGET, "http://s3-eu-west-1.amazonaws.com/web-api-hosting/jwtc/54a6a99e160a69d26dc51ad4/20150204/NCvpvFfo/target-collections.wtc");
             poiInformation.put(ATTR_PICTURE, "http://ericwuendisch.de/restnode/server/uploads/b2QK17zHWmn37ivU9gTzoIBXgwy7KZD9.jpg");
             pois.put(new JSONObject(poiInformation));

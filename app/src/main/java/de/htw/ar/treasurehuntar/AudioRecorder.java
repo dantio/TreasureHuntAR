@@ -67,7 +67,6 @@ public class AudioRecorder extends Activity {
                         startPlaying();
                         isFinished = true;
                     } else if (isFinished) {
-                        mTimer.setText("[TAP] um den Cache zu verstecken");
                         finishWithResult();
                     }
                     return true;
@@ -76,7 +75,7 @@ public class AudioRecorder extends Activity {
                         stopRecording();
                     } else if (isPlaying) {
                         stopPlaying();
-                    } else if(isFinished) {
+                    } else if (isFinished) {
                         finish();
                     }
                 }
@@ -93,8 +92,7 @@ public class AudioRecorder extends Activity {
         mPlayer.setOnCompletionListener(new MediaPlayer.
                 OnCompletionListener() {
             public void onCompletion(MediaPlayer mp) {
-                mPlayer.release();
-                mPlayer = null;
+                stopPlaying();
             }
         });
         try {
@@ -111,6 +109,7 @@ public class AudioRecorder extends Activity {
         mPlayer.release();
         mPlayer = null;
         isPlaying = false;
+        mTimer.setText("[TAP] um den Cache zu verstecken");
     }
 
     private void startRecording() {
