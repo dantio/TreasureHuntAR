@@ -29,7 +29,9 @@ import java.util.Random;
 public class HuntingActivity extends AbstractArchitectActivity {
 
     // Endpoints
-    public static final String ALL_CACHES = "http://www.vegapunk.de:9999/caches";
+    public static final String REST_SERVER_URL = "http://www.vegapunk.de:9999";
+    public static final String ALL_CACHES = REST_SERVER_URL + "/caches";
+    public static final String IN_AREA = REST_SERVER_URL + "/area/:lat/:lon/:radius";
     public static final String UPLOAD_PATH = "http://ericwuendisch.de/restnode/server/uploads/";
 
     protected JSONArray poiData;
@@ -162,7 +164,7 @@ public class HuntingActivity extends AbstractArchitectActivity {
     private void loadCache() {
         if (!isLoadingCaches) {
             Log.i("load", "Load all caches");
-            new LoadCaches().execute(ALL_CACHES);
+            new LoadCaches().execute(ALL_CACHES, IN_AREA);
         }
     }
 
@@ -268,9 +270,11 @@ public class HuntingActivity extends AbstractArchitectActivity {
         protected JSONArray doInBackground(String... urls) {
 
             // wait till we have good location
+            int maxTry = 2;
             while (
-                    lastKnownLocation == null && !isFinishing()) {
+                    lastKnownLocation == null && !isFinishing() && maxTry != 0) {
                 try {
+                    maxTry--;
                     Thread.sleep(WAIT_FOR_LOCATION_STEP_MS);
                 } catch (InterruptedException e) {
                     cancel(true);
@@ -280,6 +284,18 @@ public class HuntingActivity extends AbstractArchitectActivity {
 
             try {
                 HttpGet httpGet = new HttpGet(urls[0]);
+                /* In Area code
+                if (lastKnownLocation == null) {
+                    // Load all cache
+                    httpGet = new HttpGet(urls[0]);
+                } else {
+                    String latitude = String.valueOf(lastKnownLocation.getLatitude());
+                    String longitude = String.valueOf(lastKnownLocation.getLongitude());
+                    String url = urls[1].replace(":lat", latitude).replace(":lon", longitude).replace(":radius", String.valueOf(MAX_RADIUS));
+                    Log.i("areaUrl", url);
+                    httpGet = new HttpGet(url);
+                } */
+
                 HttpClient httpclient = new DefaultHttpClient();
                 HttpResponse response = httpclient.execute(httpGet);
                 int status = response.getStatusLine().getStatusCode();

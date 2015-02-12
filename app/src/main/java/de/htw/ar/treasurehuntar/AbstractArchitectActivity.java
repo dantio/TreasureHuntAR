@@ -379,8 +379,8 @@ public abstract class AbstractArchitectActivity extends FragmentActivity {
     /**
      * call JavaScript in architectView
      *
-     * @param methodName
-     * @param arguments
+     * @param methodName the js method name
+     * @param arguments  the argument
      */
     protected void callJavaScript(final String methodName,
                                   final String[] arguments) {
@@ -400,9 +400,9 @@ public abstract class AbstractArchitectActivity extends FragmentActivity {
     }
 
     /**
-     * call JavaScript in architectView
+     * call JavaScript in architectView without params
      *
-     * @param methodName
+     * @param methodName the js method name
      */
     protected void callJavaScript(final String methodName) {
         if (this.architectView != null) {
