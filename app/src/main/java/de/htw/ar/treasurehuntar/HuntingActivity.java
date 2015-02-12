@@ -74,7 +74,7 @@ public class HuntingActivity extends AbstractArchitectActivity {
             public boolean onGesture(Gesture gesture) {
                 switch (gesture) {
                     case TAP:
-                        if (!isHuntingMagnifier && !isHuntingTreasure) {
+                        if (!isHuntingMagnifier && !isHuntingTreasure && !isFoundTreasure) {
                             Log.i("gesture", ACTION_START_HUNTING_MAGNIFIER);
                             callJavaScript("TreasureHuntAR." + ACTION_START_HUNTING_MAGNIFIER);
                         }
@@ -84,7 +84,11 @@ public class HuntingActivity extends AbstractArchitectActivity {
                             callJavaScript("TreasureHuntAR." + ACTION_PLAY_AUDIO);
                         } else if (isFoundTreasure) {
                             isFoundTreasure = false;
-                            callJavaScript("TreasureHuntAR." + ACTION_RESTART_HUNTING);
+                            Toast.makeText(
+                                    HuntingActivity.this,
+                                    R.string.found_treasure, Toast.LENGTH_SHORT)
+                                    .show();
+                            callJavaScript("TreasureHuntAR." + ACTION_STOP_HUNTING_TREASURE);
                         }
                         return true;
 
@@ -99,6 +103,7 @@ public class HuntingActivity extends AbstractArchitectActivity {
                             Log.i("gesture", ACTION_STOP_HUNTING_TREASURE);
                             callJavaScript("TreasureHuntAR." + ACTION_STOP_HUNTING_TREASURE);
                             isHuntingTreasure = false;
+                            isHuntingMagnifier = false;
                             return true;
                         } else {
                             finish();
@@ -127,6 +132,7 @@ public class HuntingActivity extends AbstractArchitectActivity {
                 // TODO Uri uri = new Uri("uriString");
                 // starts with "architectsdk://"
                 String action = uriString.substring("architectsdk://".length());
+                Log.i("url", action);
                 if (action.equals(ACTION_START_HUNTING_MAGNIFIER)) {
                     isHuntingMagnifier = true;
                 } else if (action.equals(ACTION_START_HUNTING_TREASURE)) {
@@ -135,23 +141,13 @@ public class HuntingActivity extends AbstractArchitectActivity {
                             HuntingActivity.this,
                             R.string.hunting_play, Toast.LENGTH_SHORT)
                             .show();
-                } else if (action.startsWith(ACTION_FOUND_TREASURE)) {
-
-                    String idString = action.substring(
-                            ACTION_START_HUNTING_TREASURE.length() + "?id="
-                                    .length());
-                    int treasureId = Integer.parseInt(idString);
-                    Log.i(ACTION_START_HUNTING_TREASURE, "" + treasureId);
-
-                    Toast.makeText(
-                            HuntingActivity.this,
-                            R.string.found_treasure, Toast.LENGTH_SHORT)
-                            .show();
-
+                    return true;
+                } else if (action.equals(ACTION_FOUND_TREASURE)) {
                     isHuntingTreasure = false;
                     isHuntingMagnifier = false;
-                    callJavaScript("TreasureHuntAR." + ACTION_STOP_HUNTING_TREASURE);
-                    callJavaScript("TreasureHuntAR." + ACTION_STOP_HUNTING_MAGNIFIER);
+                    isFoundTreasure = true;
+
+                    return true;
                 }
 
                 return false;

@@ -10,9 +10,9 @@ var TreasureHuntAR = {
     tracker: null,
     modelTreasure: null, // 3d treasur model
 
-    onLocationChanged: function(latitude, longitude, altitude, accuracy) {
-        console.log("onLocationChanged");
-        this.currentLocation = new AR.GeoLocation(latitude, longitude, altitude);
+    onLocationChanged: function (latitude, longitude, altitude, accuracy) {
+        TreasureHuntAR.currentLocation = new AR.GeoLocation(latitude, longitude, altitude);
+        console.log("Set location");
     },
     /**
      * Called in HuntingActivity
@@ -22,7 +22,7 @@ var TreasureHuntAR = {
         var poiData = poiDataServer || [];
         var image = new AR.ImageDrawable(new AR.ImageResource('img/magnifier.png'), this.magnifierSize);
 
-       this.modelTreasure = new AR.Model("treasure.wt3", {
+        this.modelTreasure = new AR.Model("treasure.wt3", {
             scale: {
                 x: 0.003,
                 y: 0.003,
@@ -115,9 +115,9 @@ var TreasureHuntAR = {
             }
         );
 
+        console.log(TreasureHuntAR.currentLocation);
 
-
-        if(this.currentLocation != null && actionRange.isInArea(this.currentLocation)) {
+        if (TreasureHuntAR.currentLocation != null && actionRange.isInArea(TreasureHuntAR.currentLocation)) {
             console.log("in Area");
             TreasureHuntAR.inActionRange();
         }
@@ -138,15 +138,15 @@ var TreasureHuntAR = {
         }
 
         TreasureHuntAR.magnifierInVision.geoObject.drawables.removeIndicatorDrawable();
-        this.huntingMode = false;
+        TreasureHuntAR.huntingMode = false;
     },
-
 
 
     inVision: function (poi) {
         return function () {
             if (!TreasureHuntAR.huntingMode) {
-                if (TreasureHuntAR.magnifierInVision != null && !TreasureHuntAR.magnifierInVision.poiData.found) {
+                if (TreasureHuntAR.magnifierInVision != null &&
+                    TreasureHuntAR.magnifierInVision.geoObject.enabled) {
                     // FIXME "Uncaught TypeError: Cannot read property '0' of undefined"
                     var userDistance1 = TreasureHuntAR.magnifierInVision.geoObject.locations[0].distanceToUser();
                     var userDistance2 = poi.geoObject.locations[0].distanceToUser();
@@ -199,7 +199,21 @@ var TreasureHuntAR = {
         console.log("Tracker: " + TreasureHuntAR.magnifierInVision.poiData.target);
         TreasureHuntAR.tracker = new AR.Tracker(TreasureHuntAR.magnifierInVision.poiData.target, {
             onLoaded: function () {
-                console.log("Tracker loaded");
+                console.log("Loaded tracker");
+            }
+        });
+
+        // Similar to 2D content the 3D model is added to the drawables.cam property of an AR.Trackable2DObject.
+        // don't change '*' !
+        var thisDoc = document;
+        TreasureHuntAR.tracker.enabled = true;
+        var trackable = new AR.Trackable2DObject(TreasureHuntAR.tracker, "*", {
+            drawables: {
+                cam: [TreasureHuntAR.modelTreasure]
+            },
+            onEnterFieldOfVision: function () {
+                console.log("see treasure");
+                thisDoc.location = "architectsdk://foundTreasure"; // ?id=" + TreasureHuntAR.magnifierInVision.poiData.id;
             }
         });
 
@@ -208,27 +222,17 @@ var TreasureHuntAR = {
         document.getElementById('hintImage').src = TreasureHuntAR.magnifierInVision.poiData.picture;
         document.getElementById('hintImageWrapper').style.display = 'block';
 
-        // Similar to 2D content the 3D model is added to the drawables.cam property of an AR.Trackable2DObject.
-        var trackable = new AR.Trackable2DObject(TreasureHuntAR.tracker, "*", {
-            drawables: {
-                cam: [TreasureHuntAR.modelTreasure]
-            },
-            onEnterFieldOfVision: function () {
-                console.log("in see treasure");
-                document.location = "architectsdk://foundTreasure?id=" + TreasureHuntAR.magnifierInVision.poiData.id;
-            }
-        });
+
     },
 
     stopHuntingTreasure: function () {
         // enable all magnifier
-        for (var i = 0, l = TreasureHuntAR.magnifiersGeoObjects.length; i < l; i++) {
-            TreasureHuntAR.magnifiersGeoObjects[i].enabled = true;
-        }
-
         AR.context.services.sensors = true;
         TreasureHuntAR.magnifierInVision.geoObject.enabled = true;
         TreasureHuntAR.tracker.enabled = false;
+        document.getElementById('hintImageWrapper').style.display = 'none';
+        TreasureHuntAR.huntingMode = false;
+        TreasureHuntAR.stopHuntingMagnifier();
     },
 
     playAudio: function () {
