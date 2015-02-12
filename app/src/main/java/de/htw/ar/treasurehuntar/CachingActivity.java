@@ -14,22 +14,18 @@ import com.google.android.glass.touchpad.Gesture;
 import com.google.android.glass.touchpad.GestureDetector;
 import com.wikitude.architect.ArchitectView.ArchitectUrlListener;
 import com.wikitude.architect.ArchitectView.SensorAccuracyChangeListener;
-import org.json.JSONArray;
 
 import java.io.File;
-import java.util.List;
 
 /**
  * Schätze verstecken
  */
 public class CachingActivity extends AbstractArchitectActivity {
 
-    // take picture logic
     private static final int TAKE_PICTURE_REQUEST = 1;
     private static final int TAKE_AUDIO_REQUEST = 2;
 
     private final static String POST_CACHE_URL = "http://vegapunk.de:9999/cache";
-    //public final static String POST_CACHE_URL = "http://192.168.2.107:9999/cache";
 
     /**
      * extras key for activity title, usually static and set in Manifest.xml
@@ -87,8 +83,7 @@ public class CachingActivity extends AbstractArchitectActivity {
             public void onCompassAccuracyChanged(int accuracy) {
                 /* UNRELIABLE = 0, LOW = 1, MEDIUM = 2, HIGH = 3 */
                 if (accuracy < SensorManager.SENSOR_STATUS_ACCURACY_MEDIUM
-                        && CachingActivity.this != null && !CachingActivity.this
-                        .isFinishing() && System.currentTimeMillis()
+                        && isFinishing() && System.currentTimeMillis()
                         - CachingActivity.this.lastCalibrationToastShownTimeMillis
                         > 5 * 1000) {
                     Toast.makeText(CachingActivity.this,
@@ -140,8 +135,7 @@ public class CachingActivity extends AbstractArchitectActivity {
     /**
      * Send generic motion events to the gesture detector
      *
-     * @param event
-     * @return
+     * @param event the gesture event
      */
     @Override
     public boolean onGenericMotionEvent(MotionEvent event) {

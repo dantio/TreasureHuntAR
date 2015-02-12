@@ -2,7 +2,6 @@ package de.htw.ar.treasurehuntar;
 
 import android.content.Context;
 import android.content.res.Resources;
-import android.location.LocationListener;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
@@ -23,7 +22,6 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Random;
-import java.util.concurrent.ExecutionException;
 
 /**
  * Schätze finden
@@ -38,20 +36,15 @@ public class HuntingActivity extends AbstractArchitectActivity {
 
     // States
     protected boolean isLoadingCaches = false;
-    protected boolean isLoadingTarget = false;
 
     public boolean isHuntingMagnifier = false;
     public boolean isHuntingTreasure = false;
     public boolean isFoundTreasure = false;
 
-    // Treasure to hunt
-    public int huntingTreasureId = -1;
-
     // JavaScript functions
     public static final String ACTION_START_HUNTING_MAGNIFIER = "startHuntingMagnifier";
     public static final String ACTION_STOP_HUNTING_MAGNIFIER = "stopHuntingMagnifier";
     public static final String ACTION_PLAY_AUDIO = "playAudio";
-    public static final String ACTION_RESTART_HUNTING = "restartHunting";
 
     // User is in magnifier action range and start hunting treasure
     public static final String ACTION_START_HUNTING_TREASURE = "startHuntingTreasure";
@@ -133,21 +126,23 @@ public class HuntingActivity extends AbstractArchitectActivity {
                 // starts with "architectsdk://"
                 String action = uriString.substring("architectsdk://".length());
                 Log.i("url", action);
-                if (action.equals(ACTION_START_HUNTING_MAGNIFIER)) {
-                    isHuntingMagnifier = true;
-                } else if (action.equals(ACTION_START_HUNTING_TREASURE)) {
-                    isHuntingTreasure = true;
-                    Toast.makeText(
-                            HuntingActivity.this,
-                            R.string.hunting_play, Toast.LENGTH_SHORT)
-                            .show();
-                    return true;
-                } else if (action.equals(ACTION_FOUND_TREASURE)) {
-                    isHuntingTreasure = false;
-                    isHuntingMagnifier = false;
-                    isFoundTreasure = true;
+                switch (action) {
+                    case ACTION_START_HUNTING_MAGNIFIER:
+                        isHuntingMagnifier = true;
+                        break;
+                    case ACTION_START_HUNTING_TREASURE:
+                        isHuntingTreasure = true;
+                        Toast.makeText(
+                                HuntingActivity.this,
+                                R.string.hunting_play, Toast.LENGTH_SHORT)
+                                .show();
+                        return true;
+                    case ACTION_FOUND_TREASURE:
+                        isHuntingTreasure = false;
+                        isHuntingMagnifier = false;
+                        isFoundTreasure = true;
 
-                    return true;
+                        return true;
                 }
 
                 return false;

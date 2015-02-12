@@ -211,7 +211,7 @@ var TreasureHuntAR = {
             }
         });
 
-        console.log("Picture" + TreasureHuntAR.magnifierInVision.poiData.picture);
+        console.log("Picture " + TreasureHuntAR.magnifierInVision.poiData.picture);
 
         setTimeout(function(){
             document.getElementById('hintImage').src = TreasureHuntAR.magnifierInVision.poiData.picture;
