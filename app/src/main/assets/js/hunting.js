@@ -69,9 +69,6 @@ var TreasureHuntAR = {
 
             this.magnifiersGeoObjects.push(poi.geoObject);
         }
-
-        //AR.radar.container = document.getElementById("radarContainer");
-        //AR.radar.enabled = true;
     },
 
     restartHunting: function () {
@@ -115,13 +112,10 @@ var TreasureHuntAR = {
             }
         );
 
-        console.log(TreasureHuntAR.currentLocation);
-
         if (TreasureHuntAR.currentLocation != null && actionRange.isInArea(TreasureHuntAR.currentLocation)) {
             console.log("in Area");
             TreasureHuntAR.inActionRange();
         }
-        console.log("check action area");
     },
 
     /**
@@ -213,25 +207,25 @@ var TreasureHuntAR = {
             },
             onEnterFieldOfVision: function () {
                 console.log("see treasure");
-                thisDoc.location = "architectsdk://foundTreasure"; // ?id=" + TreasureHuntAR.magnifierInVision.poiData.id;
+                thisDoc.location = "architectsdk://foundTreasure";
             }
         });
 
         console.log("Picture" + TreasureHuntAR.magnifierInVision.poiData.picture);
 
-        document.getElementById('hintImage').src = TreasureHuntAR.magnifierInVision.poiData.picture;
-        document.getElementById('hintImageWrapper').style.display = 'block';
-
-
+        setTimeout(function(){
+            document.getElementById('hintImage').src = TreasureHuntAR.magnifierInVision.poiData.picture;
+            document.getElementById('hintImageWrapper').style.display = 'block';
+        }, 20000)
     },
 
     stopHuntingTreasure: function () {
-        // enable all magnifier
         AR.context.services.sensors = true;
         TreasureHuntAR.magnifierInVision.geoObject.enabled = true;
         TreasureHuntAR.tracker.enabled = false;
         document.getElementById('hintImageWrapper').style.display = 'none';
         TreasureHuntAR.huntingMode = false;
+        // enable all magnifier
         TreasureHuntAR.stopHuntingMagnifier();
     },
 
